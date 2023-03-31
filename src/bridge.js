@@ -4,10 +4,10 @@ import Web3 from 'web3';
 
 const BridgeCrypto = () => {
     const [formData, setFormData] = useState({
-        currency: '',
-        fromChain: '',
-        amount: '',
-        bridgeTo: '',
+        currency: 'grams',
+        fromChain: 'grams',
+        amount: '1',
+        bridgeTo: 'octa',
         shippingAddress: '',
     });
 
@@ -19,7 +19,7 @@ const BridgeCrypto = () => {
         e.preventDefault();
 
         // validate that all fields are populated
-        
+
 
         // Convert the amount into a BigInt
         const web3 = new Web3();
@@ -69,8 +69,8 @@ const BridgeCrypto = () => {
                     value={formData.bridgeTo}
                     onChange={handleChange}
                 >
-                    <option value="grams">PartyChain</option>
                     <option value="octa">OctaSpace</option>
+                    <option value="grams">PartyChain</option>
                 </select>
 
                 <br />
