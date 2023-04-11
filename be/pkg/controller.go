@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -40,6 +41,8 @@ func (c *Controller) RequestBridge(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("invalid sell order")
 		return
 	}
+
+	bridgeRequest.ClientID = uuid.New().String()
 
 	bridgeRequestJSON, err := json.Marshal(bridgeRequest)
 	if err != nil {

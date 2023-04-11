@@ -23,7 +23,8 @@ func main() {
 	// for future use.
 
 	if c.SAASAddress == "" {
-		c.SAASAddress = "https://teaparty-partybridge.ngrok.io"
+		// c.SAASAddress = "http://143.42.111.52:8080"
+		c.SAASAddress = "http://192.168.50.23:8080"
 	}
 
 	// create a new sugard logger

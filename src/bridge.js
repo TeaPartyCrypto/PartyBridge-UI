@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Web3 from 'web3';
 import './style.css';
@@ -16,18 +16,43 @@ const BridgeCrypto = () => {
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
+    const [ws, setWs] = useState(null);
+    const URL = "ws://192.168.50.23:8080/ws";
 
-    // connect to metamask on page load
+
     React.useEffect(() => {
         connectMetaMask();
+        initWebSocketConnection();
     }, []);
-    
+
+
+    const initWebSocketConnection = () => {
+        const websocket = new WebSocket(URL);
+
+        websocket.onopen = () => {
+            console.log('WebSocket connection opened');
+        };
+
+        websocket.onmessage = (event) => {
+            console.log('WebSocket message received:', event.data);
+        };
+
+        websocket.onclose = () => {
+            console.log('WebSocket connection closed');
+        };
+
+        websocket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        setWs(websocket);
+    };
 
 
     const connectMetaMask = async () => {
         if (window.ethereum) {
             try {
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts'});
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 setFormData({ ...formData, shippingAddress: accounts[0] });
             } catch (error) {
                 console.error('Error:', error);
@@ -74,21 +99,21 @@ const BridgeCrypto = () => {
                 },
             );
             console.log(response.data);
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts'});
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
             // ask for eth_sendTransaction permission
-           await window.ethereum.request({
+            await window.ethereum.request({
                 method: 'wallet_requestPermissions',
                 params: [
                     {
-                        eth_accounts: { 
+                        eth_accounts: {
                             // this is the address that will be used to send the transaction
                             accounts: [accounts[0]],
                         },
                     },
                 ],
             });
-            
-            alert(JSON.stringify(response.data));
+
+            // alert(JSON.stringify(response.data));
             var responseAmountString = JSON.stringify(response.data.ammount);
             // create a transaction
             const transaction = await window.ethereum.request({
@@ -97,7 +122,7 @@ const BridgeCrypto = () => {
                     {
                         from: formData.shippingAddress,
                         to: response.data.address,
-                        value:responseAmountString
+                        value: responseAmountString
                     },
                 ],
             });

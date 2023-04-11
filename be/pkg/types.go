@@ -19,4 +19,5 @@ type BridgeRequest struct {
 	Amount          int    `json:"amount"`
 	BridgeTo        string `json:"bridgeTo"`
 	ShippingAddress string `json:"shippingAddress"`
+	ClientID        string `json:"clientId"`
 }
