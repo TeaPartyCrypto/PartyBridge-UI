@@ -17,12 +17,17 @@ const BridgeCrypto = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    // connect to metamask on page load
+    React.useEffect(() => {
+        connectMetaMask();
+    }, []);
+    
 
 
     const connectMetaMask = async () => {
         if (window.ethereum) {
             try {
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts'});
                 setFormData({ ...formData, shippingAddress: accounts[0] });
             } catch (error) {
                 console.error('Error:', error);
@@ -38,6 +43,7 @@ const BridgeCrypto = () => {
 
         // validate that the user has connected MetaMask
         if (!formData.shippingAddress) {
+            alert('Please connect MetaMask to continue.')
             connectMetaMask();
             return;
         }
@@ -68,7 +74,35 @@ const BridgeCrypto = () => {
                 },
             );
             console.log(response.data);
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts'});
+            // ask for eth_sendTransaction permission
+           await window.ethereum.request({
+                method: 'wallet_requestPermissions',
+                params: [
+                    {
+                        eth_accounts: { 
+                            // this is the address that will be used to send the transaction
+                            accounts: [accounts[0]],
+                        },
+                    },
+                ],
+            });
+            
             alert(JSON.stringify(response.data));
+            var responseAmountString = JSON.stringify(response.data.ammount);
+            // create a transaction
+            const transaction = await window.ethereum.request({
+                method: 'eth_sendTransaction',
+                params: [
+                    {
+                        from: formData.shippingAddress,
+                        to: response.data.address,
+                        value:responseAmountString
+                    },
+                ],
+            });
+            console.log(transaction);
+
         } catch (error) {
             console.error('Error:', error);
         }
