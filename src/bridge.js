@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import Web3 from 'web3';
 import './style.css';
-
+import logo_bscscan from './img/logo-bscscan.svg';
+import logo_pancake from './img/logo-pancake.svg';
 
 const BridgeCrypto = () => {
+    const web3 = new Web3();
+
     const [formData, setFormData] = useState({
         currency: 'octa',
         fromChain: 'octa',
@@ -12,6 +15,9 @@ const BridgeCrypto = () => {
         bridgeTo: 'grams',
         shippingAddress: '',
     });
+
+    const [account, setAccount] = useState('Connect Metamask');
+    const [balance, setBalance] = useState('0');
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -22,13 +28,18 @@ const BridgeCrypto = () => {
         connectMetaMask();
     }, []);
     
-
-
     const connectMetaMask = async () => {
         if (window.ethereum) {
             try {
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts'});
                 setFormData({ ...formData, shippingAddress: accounts[0] });
+
+                const balance = await window.ethereum.request({
+                  method: "eth_getBalance",
+                  params: [accounts[0], "latest"],
+                }); 
+                setBalance(parseInt(web3.utils.fromWei(parseInt(balance).toString(), 'ether')).toFixed(5));
+                setAccount(accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4));
             } catch (error) {
                 console.error('Error:', error);
             }
@@ -57,7 +68,7 @@ const BridgeCrypto = () => {
         }
 
         // Convert the amount into a BigInt
-        const web3 = new Web3();
+        //const web3 = new Web3();
         const amountInWei = parseInt(web3.utils.toWei(formData.amount, 'ether'))
 
         try {
@@ -115,12 +126,12 @@ const BridgeCrypto = () => {
                     <div class="container mx-auto pl-2 pr-2">
                         <div class="grid grid-cols-12 gap-4 content-center">
                             <div class=" col-span-4 navbar__logo">
-                                Bridge
+                                Cross Chain Bridge
                             </div>
                             <div class="col-span-8 flex flex-row justify-end items-center">
                                 <button class="btn btn--outline btn--metamask mr-5"
                                     onClick={connectMetaMask}
-                                >Connect Metamask</button>
+                                >{account}</button>
                                 <div class="theme-toggle">
                                     <input type="checkbox" class="theme-toggle__input" id="theme-toggle__input" />
                                     <label for="theme-toggle__input" class="theme-toggle__label">
@@ -194,7 +205,7 @@ const BridgeCrypto = () => {
 
                         </div>
                         <div className="box box--small">
-                            <p className="text-lg">Balance: <span className="font-semibold"></span></p>
+                            <p className="text-lg">Balance: <span className="font-semibold">{balance}</span></p>
                             <p className="text-lg">Fee: <span className="font-semibold"></span></p>
                             <p className="text-lg">Minimum: <span className="font-semibold"></span></p>
                         </div>
@@ -252,6 +263,20 @@ const BridgeCrypto = () => {
                     </div>
 
                 </div>
+          
+                <footer className="py-7">
+                  <div className="container mx-auto pl-2 pr-2">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-center sm:text-left">
+                      <div className="mb-5 sm:mb-0">&copy; 2023</div>
+                      <div className="flex flex-col items-center sm:flex-row footer__links">
+                        <span></span>
+                          <a href="#"><img src={logo_bscscan} width="80"/></a>
+                          <a href="#"><img src={logo_pancake} width="90"/></a>
+                      </div>
+                    </div>
+                  </div>
+                </footer>
+
             </div>
         </div >
     );
