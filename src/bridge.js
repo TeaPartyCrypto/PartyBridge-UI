@@ -22,6 +22,8 @@ const BridgeCrypto = () => {
 
     const [account, setAccount] = useState('Connect Metamask');
     const [balance, setBalance] = useState('0');
+    const [fee, setFee] = useState('0');
+    const [minimum, setMinimum] = useState('0');
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -77,7 +79,7 @@ const BridgeCrypto = () => {
                   method: "eth_getBalance",
                   params: [accounts[0], "latest"],
                 }); 
-                setBalance(parseInt(web3.utils.fromWei(parseInt(balance).toString(), 'ether')).toFixed(5));
+                setBalance(parseFloat(web3.utils.fromWei(parseInt(balance).toString(), 'ether')).toFixed(5));
                 setAccount(accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4));
             } catch (error) {
                 console.error('Error:', error);
@@ -101,7 +103,6 @@ const BridgeCrypto = () => {
         });
     };
 
-
     const handleSubmit = async (e) => {
         console.log(formData);
         e.preventDefault();
@@ -120,7 +121,6 @@ const BridgeCrypto = () => {
                 return;
             }
         }
-
 
         // Validate that the user has selected the correct network
         try {
@@ -284,8 +284,8 @@ const BridgeCrypto = () => {
                         </div>
                         <div className="box box--small">
                             <p className="text-lg">Balance: <span className="font-semibold">{balance}</span></p>
-                            <p className="text-lg">Fee: <span className="font-semibold"></span></p>
-                            <p className="text-lg">Minimum: <span className="font-semibold"></span></p>
+                            <p className="text-lg">Fee: <span className="font-semibold">{fee}</span></p>
+                            <p className="text-lg">Minimum: <span className="font-semibold">{minimum}</span></p>
                         </div>
                     </div>
 
