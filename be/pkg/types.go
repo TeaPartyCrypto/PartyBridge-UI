@@ -9,6 +9,7 @@ import (
 type Controller struct {
 	rootHandler http.Handler
 	SAASAddress string
+	IP          string
 
 	Log *zap.Logger
 }

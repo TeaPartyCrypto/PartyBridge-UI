@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Web3 from 'web3';
+import { v4 as uuidv4 } from 'uuid';
 import './style.css';
 
 
@@ -12,12 +13,15 @@ const BridgeCrypto = () => {
         bridgeTo: 'grams',
         shippingAddress: '',
     });
+    const [ws, setWs] = useState(null);
+    const [clientId, setClientID] = useState(uuidv4());
+    const URL = "ws://143.42.111.52:8080/ws";
+    const web3 = new Web3();
+
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
-    const [ws, setWs] = useState(null);
-    const URL = "ws://192.168.50.23:8080/ws";
 
 
     React.useEffect(() => {
@@ -25,29 +29,39 @@ const BridgeCrypto = () => {
         initWebSocketConnection();
     }, []);
 
+    const reconnectInterval = useRef(null);
 
     const initWebSocketConnection = () => {
-        const websocket = new WebSocket(URL);
-
+        const websocket = new WebSocket(`${URL}?id=${clientId}`);
+    
         websocket.onopen = () => {
             console.log('WebSocket connection opened');
+            if (reconnectInterval.current) {
+                clearInterval(reconnectInterval.current);
+                reconnectInterval.current = null;
+            }
         };
-
+    
         websocket.onmessage = (event) => {
             console.log('WebSocket message received:', event.data);
         };
-
+    
         websocket.onclose = () => {
             console.log('WebSocket connection closed');
+            if (!reconnectInterval.current) {
+                reconnectInterval.current = setInterval(() => {
+                    console.log('Attempting to reconnect...');
+                    initWebSocketConnection();
+                }, 5000); // Reconnect every 5 seconds
+            }
         };
-
+    
         websocket.onerror = (error) => {
             console.error('WebSocket error:', error);
         };
-
+    
         setWs(websocket);
     };
-
 
     const connectMetaMask = async () => {
         if (window.ethereum) {
@@ -61,6 +75,21 @@ const BridgeCrypto = () => {
             alert('MetaMask is not installed. Please install MetaMask and try again.');
         }
     };
+
+    const requestChangeToOctaSpaceNetwork = async () => {
+        await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: web3.utils.toHex(800001) }],
+        });
+    };
+
+    const requestChangeToPartyChainNetwork = async () => {
+        await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: web3.utils.toHex(1773) }],
+        });
+    };
+
 
     const handleSubmit = async (e) => {
         console.log(formData);
@@ -81,13 +110,27 @@ const BridgeCrypto = () => {
             }
         }
 
+
+        // Validate that the user has selected the correct network
+        try {
+            if (formData.fromChain === 'octa') {
+                await requestChangeToOctaSpaceNetwork();
+            }
+            if (formData.fromChain === 'grams') {
+                await requestChangeToPartyChainNetwork();
+            }
+        } catch (error) {
+            console.error('Error switching networks:', error);
+            return;
+        }
+
         // Convert the amount into a BigInt
-        const web3 = new Web3();
+
         const amountInWei = parseInt(web3.utils.toWei(formData.amount, 'ether'))
 
         try {
             const response = await axios.post(
-                '/requestbridge',
+                `/requestbridge?id=${clientId}`,
                 {
                     ...formData,
                     amount: amountInWei,
@@ -97,41 +140,52 @@ const BridgeCrypto = () => {
                         'Content-Type': 'application/json',
                     },
                 },
-            );
-            console.log(response.data);
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            // ask for eth_sendTransaction permission
-            await window.ethereum.request({
-                method: 'wallet_requestPermissions',
-                params: [
-                    {
-                        eth_accounts: {
-                            // this is the address that will be used to send the transaction
-                            accounts: [accounts[0]],
+            ).catch((error) => {
+                if (error.response) {
+                    console.error("Server responded with an error:", error.response.data);
+                } else if (error.request) {
+                    console.error("No response was received from the server:", error.request);
+                } else {
+                    console.error("Axios error:", error.message);
+                }
+            });
+    
+            if (!response) {
+                console.error("No response object");
+                return;
+            }
+            console.log(response.data)
+    
+            // Verify the response.data has valid fields
+            if (!response.data.address || !response.data.amount) {
+                alert('Invalid response from server. Please try again.');
+                return;
+            }
+    
+            // Convert the response amount to a hexadecimal string
+            var responseAmountHex = web3.utils.toHex(response.data.amount);
+    
+            // Create a transaction
+            try {
+                const transaction = await window.ethereum.request({
+                    method: 'eth_sendTransaction',
+                    params: [
+                        {
+                            from: formData.shippingAddress,
+                            to: response.data.address,
+                            value: responseAmountHex,
                         },
-                    },
-                ],
-            });
-
-            // alert(JSON.stringify(response.data));
-            var responseAmountString = JSON.stringify(response.data.ammount);
-            // create a transaction
-            const transaction = await window.ethereum.request({
-                method: 'eth_sendTransaction',
-                params: [
-                    {
-                        from: formData.shippingAddress,
-                        to: response.data.address,
-                        value: responseAmountString
-                    },
-                ],
-            });
-            console.log(transaction);
-
+                    ],
+                });
+                console.log(transaction);
+            } catch (error) {
+                console.error('Error sending transaction:', error);
+            }
         } catch (error) {
             console.error('Error:', error);
         }
     };
+    
 
     return (
         <div>
