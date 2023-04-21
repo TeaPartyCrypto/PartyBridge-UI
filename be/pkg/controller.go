@@ -64,10 +64,6 @@ func (c *Controller) RequestBridge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := saasURL.Query()
-	query.Set("ip", c.IP)
-	saasURL.RawQuery = query.Encode()
-
 	req, err := http.NewRequest("POST", saasURL.String(), io)
 	if err != nil {
 		c.Log.Error("error creating http request", zap.Error(err))
