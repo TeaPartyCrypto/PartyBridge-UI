@@ -348,7 +348,7 @@ const BridgeCrypto = () => {
 
                         </div>
                         <div className="box box--small flex items-center">
-                            <p className="text-lg">ClientId: {clientId}<span className="font-semibold"></span></p>
+                            <p className="text-lg">Id: <span className="font-semibold">{clientId}</span></p>
                         </div>
                     </div>
 
