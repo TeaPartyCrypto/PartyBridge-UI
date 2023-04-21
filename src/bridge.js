@@ -117,7 +117,8 @@ const BridgeCrypto = () => {
                 console.error('Error:', error);
             }
         } else {
-            alert('MetaMask is not installed. Please install MetaMask and try again.');
+            setLogMessage("MetaMask is not installed. Please install MetaMask and try again.");
+            //alert('MetaMask is not installed. Please install MetaMask and try again.');
         }
     };
 
@@ -175,6 +176,7 @@ const BridgeCrypto = () => {
                 await requestChangeToPartyChainNetwork();
             }
         } catch (error) {
+            setLogMessage('Error switching networks:' + error);
             console.error('Error switching networks:', error);
             return;
         }
@@ -205,6 +207,7 @@ const BridgeCrypto = () => {
             });
     
             if (!response) {
+                setLogMessage("No response object");
                 console.error("No response object");
                 return;
             }
@@ -231,15 +234,17 @@ const BridgeCrypto = () => {
                         },
                     ],
                 });
+                setLogMessage("TxId: " + transaction);
                 console.log(transaction);
             } catch (error) {
+                setLogMessage(error);
                 console.error('Error sending transaction:', error);
             }
         } catch (error) {
+            setLogMessage(error);
             console.error('Error:', error);
         }
     };
-    
 
     return (
         <div>
@@ -363,7 +368,7 @@ const BridgeCrypto = () => {
                             </div>
 
                         </div>
-                        <div className="box box--small flex items-center">
+                        <div className="box box--small">
                             <p className="text-lg">Id: <span className="font-semibold">{clientId}</span></p>
                             <p className="text-lg">{logMessage}</p>
                         </div>
