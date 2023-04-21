@@ -372,7 +372,7 @@ const BridgeCrypto = () => {
                 <footer className="py-7">
                   <div className="container mx-auto pl-2 pr-2">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-center sm:text-left">
-                      <div className="mb-5 sm:mb-0">&copy; 2023</div>
+                      <div className="mb-5 sm:mb-0">&copy; {new Date().getFullYear()}</div>
                       <div className="flex flex-col items-center sm:flex-row footer__links">
                         <span></span>
                           <a href="#"><img src={logo_bscscan} width="80"/></a>
