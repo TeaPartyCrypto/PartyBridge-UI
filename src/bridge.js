@@ -19,18 +19,19 @@ const BridgeCrypto = () => {
     const URL = "ws://143.42.111.52:8080/ws";
     const web3 = new Web3();
 
-
-    const [account, setAccount] = useState('Connect Metamask');
+    const [account, setAccount] = useState(null);
     const [balance, setBalance] = useState('0');
     const [fee, setFee] = useState('0');
-    const [minimum, setMinimum] = useState('0');
+    const [minimum, setMinimum] = useState('1');
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-
     React.useEffect(() => {
+        if (window.ethereum) {
+          window.ethereum.on("chainChanged", chainChanged);
+        };
         connectMetaMask();
         initWebSocketConnection();
     }, []);
@@ -69,24 +70,37 @@ const BridgeCrypto = () => {
         setWs(websocket);
     };
 
+    const chainChanged = async () => {
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      updateBalance(accounts[0]);
+    };
+
     const connectMetaMask = async () => {
         if (window.ethereum) {
             try {
                 const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 setFormData({ ...formData, shippingAddress: accounts[0] });
 
-                const balance = await window.ethereum.request({
-                  method: "eth_getBalance",
-                  params: [accounts[0], "latest"],
-                }); 
-                setBalance(parseFloat(web3.utils.fromWei(parseInt(balance).toString(), 'ether')).toFixed(5));
-                setAccount(accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4));
+                setAccount(accounts[0]);
+                updateBalance(accounts[0]);
             } catch (error) {
                 console.error('Error:', error);
             }
         } else {
             alert('MetaMask is not installed. Please install MetaMask and try again.');
         }
+    };
+
+    const updateBalance = async (account) => {
+      if (window.ethereum.isConnected()) {
+        const balance = await window.ethereum.request({
+          method: "eth_getBalance",
+          params: [account, "latest"],
+        });
+        setBalance(parseFloat(web3.utils.fromWei(parseInt(balance).toString(), 'ether')).toFixed(5));
+      } else {
+        setBalance('0');
+      }
     };
 
     const requestChangeToOctaSpaceNetwork = async () => {
@@ -209,7 +223,7 @@ const BridgeCrypto = () => {
                             <div class="col-span-8 flex flex-row justify-end items-center">
                                 <button class="btn btn--outline btn--metamask mr-5"
                                     onClick={connectMetaMask}
-                                >{account}</button>
+                                >{account ?  account.slice(0, 6) + '...' + account.slice(-4) : 'Connect MetaMask'}</button>
                                 <div class="theme-toggle">
                                     <input type="checkbox" class="theme-toggle__input" id="theme-toggle__input" />
                                     <label for="theme-toggle__input" class="theme-toggle__label">
@@ -220,7 +234,7 @@ const BridgeCrypto = () => {
                                         </span>
                                         <span class="theme-toggle__icon theme-toggle__light">
                                             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <g clip-path="url(#clip0_119_125)">
+                                                <g clipPath="url(#clip0_119_125)">
                                                     <path d="M8.98996 14.4581C5.97492 14.4581 3.52179 12.0051 3.52179 8.9899C3.52179 5.97486 5.97492 3.52173 8.98996 3.52173C12.0052 3.52173 14.4581 5.97486 14.4581 8.9899C14.4581 12.0051 12.0052 14.4581 8.98996 14.4581ZM8.98996 3.91688C6.19265 3.91688 3.91695 6.19259 3.91695 8.9899C3.91695 11.787 6.19265 14.0629 8.98996 14.0629C11.7871 14.0629 14.063 11.787 14.063 8.9899C14.063 6.19259 11.7871 3.91688 8.98996 3.91688Z" fill="black" />
                                                     <path d="M8.98994 2.28271C8.88087 2.28271 8.79236 2.19419 8.79236 2.08513V0.296455C8.79236 0.187392 8.88087 0.098877 8.98994 0.098877C9.099 0.098877 9.18751 0.187392 9.18751 0.296455V2.08513C9.18751 2.19419 9.099 2.28271 8.98994 2.28271Z" fill="black" />
                                                     <path d="M8.98994 17.8809C8.88087 17.8809 8.79236 17.7925 8.79236 17.6833V15.8946C8.79236 15.7853 8.88087 15.697 8.98994 15.697C9.099 15.697 9.18751 15.7853 9.18751 15.8946V17.6833C9.18751 17.7925 9.099 17.8809 8.98994 17.8809Z" fill="black" />
@@ -253,16 +267,16 @@ const BridgeCrypto = () => {
                         <div className="box relative z-30">
 
                             <div className="box__select-group">
-                                <label htmlFor="choose-network-1">Choose network</label>
+                                <label htmlFor="choose-network-1">Network</label>
                                 <select name="fromChain" id="fromChain"
                                     onChange={handleChange}>
-                                    <option value="octa">OCTA NETWORK</option>
-                                    <option value="grams">PARTYCHAIN</option>
+                                    <option value="octa">OctaSpace</option>
+                                    <option value="grams">PartyChain</option>
                                 </select>
                             </div>
 
                             <div className="box__select-group">
-                                <label htmlFor="choose-coin-1">Choose coin</label>
+                                <label htmlFor="choose-coin-1">Asset</label>
                                 <select name="currency" id="currency"
                                     onChange={handleChange}
                                 >
@@ -299,8 +313,6 @@ const BridgeCrypto = () => {
                                     <path d="M292 18L262 0.679492V35.3205L292 18ZM0 21H265V15H0L0 21Z" fill="#BE6432" />
                                 </svg>
                             </div>
-                            <p className="pt-12 mt-10 font-bold text-2xl sm:pl-0 pl-20">Monitor</p>
-                            <p className="mt-2 text-lg sm:pl-0 pl-20 mb-5 sm:mb-0">Loading...</p>
                             <button className="btn btn--main sm:ml-0 ml-20"
                                 onClick={handleSubmit}
                             >Request swap</button>
@@ -312,11 +324,11 @@ const BridgeCrypto = () => {
                         <div className="box relative z-10">
 
                             <div className="box__select-group">
-                                <label htmlFor="bridgeTo">Choose network</label>
+                                <label htmlFor="bridgeTo">Network</label>
                                 <select name="bridgeTo" id="bridgeTo"
                                     onChange={handleChange}>
-                                    <option value="grams">PARTYCHAIN</option>
-                                    <option value="octa">OCTA NETWORK</option>
+                                    <option value="grams">PartyChain</option>
+                                    <option value="octa">OctaSpace</option>
                                 </select>
                             </div>
 
@@ -336,7 +348,7 @@ const BridgeCrypto = () => {
 
                         </div>
                         <div className="box box--small flex items-center">
-                            <p className="text-lg">Balance: <span className="font-semibold"></span></p>
+                            <p className="text-lg">ClientId: {clientId}<span className="font-semibold"></span></p>
                         </div>
                     </div>
 
