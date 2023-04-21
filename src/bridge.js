@@ -14,6 +14,24 @@ const BridgeCrypto = () => {
         bridgeTo: 'grams',
         shippingAddress: '',
     });
+
+    const octaAssets = [
+      {value: 'octa', text: 'OCTA'},
+      {value: 'wgrams', text: 'wGRAMS'}
+    ];
+    const partyAssets = [
+      {value: 'grams', text: 'GRAMS'},
+      {value: 'wocta', text: 'wOCTA'}
+    ];
+
+    const octaBridgeTo = [
+      {value: 'grams', text: 'PartyChain'}
+    ];
+
+    const partyBridgeTo = [
+      {value: 'octa', text: 'OctaSpace'}
+    ];
+
     const [ws, setWs] = useState(null);
     const [clientId, setClientID] = useState(uuidv4());
     const URL = "ws://143.42.111.52:8080/ws";
@@ -23,8 +41,19 @@ const BridgeCrypto = () => {
     const [balance, setBalance] = useState('0');
     const [fee, setFee] = useState('0');
     const [minimum, setMinimum] = useState('1');
+    const [assets, setAssets] = useState(octaAssets);
+    const [bridgeTo, setBridgeTo] = useState(octaBridgeTo);
 
     const handleChange = (e) => {
+        if (e.target.name == 'fromChain') {
+          if (e.target.value == 'octa') {
+            setAssets(octaAssets);
+            setBridgeTo(octaBridgeTo);
+          } else if (e.target.value == 'grams') {
+            setAssets(partyAssets);
+            setBridgeTo(partyBridgeTo);
+          };
+        };
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
@@ -280,10 +309,9 @@ const BridgeCrypto = () => {
                                 <select name="currency" id="currency"
                                     onChange={handleChange}
                                 >
-                                    <option value="octa">OCTA</option>
-                                    <option value="grams">GRAM</option>
-                                    <option value="wocta">wOCTA</option>
-                                    <option value="wgrams">wGRAM</option>
+                                {assets.map(item => {
+                                  return (<option key={item.value} value={item.value}>{item.text}</option>);
+                                })}
                                 </select>
                             </div>
 
@@ -327,24 +355,11 @@ const BridgeCrypto = () => {
                                 <label htmlFor="bridgeTo">Network</label>
                                 <select name="bridgeTo" id="bridgeTo"
                                     onChange={handleChange}>
-                                    <option value="grams">PartyChain</option>
-                                    <option value="octa">OctaSpace</option>
+                                    {bridgeTo.map(item => {
+                                      return (<option key={item.value} value={item.value}>{item.text}</option>);
+                                    })}
                                 </select>
                             </div>
-
-                            {/* <div className="box__select-group">
-                                <label htmlFor="choose-coin-2">Choose coin</label>
-                                <select name="choose-coin-2" id="choose-coin-2">
-                                    <option value="gram">GRAM</option>
-                                    <option value="octa">OCTA</option>
-                                </select>
-                            </div> */}
-
-                            {/* if the selected network is grams show wGRAMS if it is octa then choose wOCTA */}
-                            {/* <p className="text-xl pt-4">
-                                Will be received: <span className="font-bold text-2xl text-accent-primary">3000</span>{" "}
-                                {formData.fromChain === "grams" ? "wGRAMS" : formData.fromChain === "octa" ? "wOCTA" : ""}
-                            </p> */}
 
                         </div>
                         <div className="box box--small flex items-center">
