@@ -135,17 +135,68 @@ const BridgeCrypto = () => {
     };
 
     const requestChangeToOctaSpaceNetwork = async () => {
+      try {
         await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: web3.utils.toHex(800001) }],
         });
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainId: web3.utils.toHex(800001),
+                  chainName: 'OctaSpace',
+                  rpcUrls: ['https://rpc.octa.space'],
+                  nativeCurrency: {
+                    name: 'OCTA',
+                    symbol: 'OCTA',
+                    decimals: 18
+                  },
+                  blockExplorerUrls: ['https://explorer.octa.space'],
+                  iconUrls: ['https://raw.githubusercontent.com/octaspace/logos/main/logo-256x256.png']
+                }
+              ]
+            });
+          } catch (addError) {
+            setLogMessage('Cannot add OctaSpace: ' + addError)
+          }
+        }
+      }
     };
 
     const requestChangeToPartyChainNetwork = async () => {
+      try {
         await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: web3.utils.toHex(1773) }],
         });
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainId: web3.utils.toHex(1773),
+                  chainName: 'PartyChain',
+                  rpcUrls: ['https://tea.mining4people.com/rpc'],
+                  nativeCurrency: {
+                    name: 'GRAMS',
+                    symbol: 'GRAMS',
+                    decimals: 18
+                  },
+                  blockExplorerUrls: ['https://tea.mining4people.com']
+                }
+              ]
+            });
+          } catch (addError) {
+            setLogMessage('Cannot add PartyChain: ' + addError)
+          }
+        }
+      }
     };
 
     const handleSubmit = async (e) => {
