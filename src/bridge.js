@@ -16,20 +16,20 @@ const BridgeCrypto = () => {
     });
 
     const octaAssets = [
-      {value: 'octa', text: 'OCTA'},
-      {value: 'wgrams', text: 'wGRAMS'}
+        { value: 'octa', text: 'OCTA' },
+        { value: 'wgrams', text: 'wGRAMS' }
     ];
     const partyAssets = [
-      {value: 'grams', text: 'GRAMS'},
-      {value: 'wocta', text: 'wOCTA'}
+        { value: 'grams', text: 'GRAMS' },
+        { value: 'wocta', text: 'wOCTA' }
     ];
 
     const octaBridgeTo = [
-      {value: 'grams', text: 'PartyChain'}
+        { value: 'grams', text: 'PartyChain' }
     ];
 
     const partyBridgeTo = [
-      {value: 'octa', text: 'OctaSpace'}
+        { value: 'octa', text: 'OctaSpace' }
     ];
 
     const [ws, setWs] = useState(null);
@@ -46,21 +46,25 @@ const BridgeCrypto = () => {
     const [bridgeTo, setBridgeTo] = useState(octaBridgeTo);
 
     const handleChange = (e) => {
-        if (e.target.name == 'fromChain') {
-          if (e.target.value == 'octa') {
-            setAssets(octaAssets);
-            setBridgeTo(octaBridgeTo);
-          } else if (e.target.value == 'grams') {
-            setAssets(partyAssets);
-            setBridgeTo(partyBridgeTo);
-          };
-        };
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        if (e.target.name === 'fromChain') {
+            if (e.target.value === 'octa') {
+                setAssets(octaAssets);
+                setBridgeTo(octaBridgeTo);
+                setFormData({ ...formData, [e.target.name]: e.target.value, bridgeTo: octaBridgeTo[0].value });
+            }
+            if (e.target.value === 'grams') {
+                setAssets(partyAssets);
+                setBridgeTo(partyBridgeTo);
+                setFormData({ ...formData, [e.target.name]: e.target.value, bridgeTo: partyBridgeTo[0].value });
+            }
+        } else {
+            setFormData({ ...formData, [e.target.name]: e.target.value });
+        }
     };
 
     React.useEffect(() => {
         if (window.ethereum) {
-          window.ethereum.on("chainChanged", chainChanged);
+            window.ethereum.on("chainChanged", chainChanged);
         };
         connectMetaMask();
         initWebSocketConnection();
@@ -70,7 +74,7 @@ const BridgeCrypto = () => {
 
     const initWebSocketConnection = () => {
         const websocket = new WebSocket(`${URL}?id=${clientId}`);
-    
+
         websocket.onopen = () => {
             console.log('WebSocket connection opened');
             if (reconnectInterval.current) {
@@ -78,11 +82,11 @@ const BridgeCrypto = () => {
                 reconnectInterval.current = null;
             }
         };
-    
+
         websocket.onmessage = (event) => {
             console.log('WebSocket message received:', event.data);
         };
-    
+
         websocket.onclose = () => {
             console.log('WebSocket connection closed');
             if (!reconnectInterval.current) {
@@ -92,17 +96,17 @@ const BridgeCrypto = () => {
                 }, 5000); // Reconnect every 5 seconds
             }
         };
-    
+
         websocket.onerror = (error) => {
             console.error('WebSocket error:', error);
         };
-    
+
         setWs(websocket);
     };
 
     const chainChanged = async () => {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      updateBalance(accounts[0]);
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        updateBalance(accounts[0]);
     };
 
     const connectMetaMask = async () => {
@@ -123,15 +127,15 @@ const BridgeCrypto = () => {
     };
 
     const updateBalance = async (account) => {
-      if (window.ethereum.isConnected()) {
-        const balance = await window.ethereum.request({
-          method: "eth_getBalance",
-          params: [account, "latest"],
-        });
-        setBalance(parseFloat(web3.utils.fromWei(parseInt(balance).toString(), 'ether')).toFixed(5));
-      } else {
-        setBalance('0');
-      }
+        if (window.ethereum.isConnected()) {
+            const balance = await window.ethereum.request({
+                method: "eth_getBalance",
+                params: [account, "latest"],
+            });
+            setBalance(parseFloat(web3.utils.fromWei(parseInt(balance).toString(), 'ether')).toFixed(5));
+        } else {
+            setBalance('0');
+        }
     };
 
     const requestChangeToOctaSpaceNetwork = async () => {
@@ -205,23 +209,23 @@ const BridgeCrypto = () => {
                     console.error("Axios error:", error.message);
                 }
             });
-    
+
             if (!response) {
                 setLogMessage("No response object");
                 console.error("No response object");
                 return;
             }
             console.log(response.data)
-    
+
             // Verify the response.data has valid fields
             if (!response.data.address || !response.data.amount) {
                 alert('Invalid response from server. Please try again.');
                 return;
             }
-    
+
             // Convert the response amount to a hexadecimal string
             var responseAmountHex = web3.utils.toHex(response.data.amount);
-    
+
             // Create a transaction
             try {
                 const transaction = await window.ethereum.request({
@@ -258,7 +262,7 @@ const BridgeCrypto = () => {
                             <div className="col-span-8 flex flex-row justify-end items-center">
                                 <button className="btn btn--outline btn--metamask mr-5"
                                     onClick={connectMetaMask}
-                                >{account ?  account.slice(0, 6) + '...' + account.slice(-4) : 'Connect MetaMask'}</button>
+                                >{account ? account.slice(0, 6) + '...' + account.slice(-4) : 'Connect MetaMask'}</button>
                                 <div className="theme-toggle">
                                     <input type="checkbox" className="theme-toggle__input" id="theme-toggle__input" />
                                     <label htmlFor="theme-toggle__input" className="theme-toggle__label">
@@ -315,9 +319,9 @@ const BridgeCrypto = () => {
                                 <select name="currency" id="currency"
                                     onChange={handleChange}
                                 >
-                                {assets.map(item => {
-                                  return (<option key={item.value} value={item.value}>{item.text}</option>);
-                                })}
+                                    {assets.map(item => {
+                                        return (<option key={item.value} value={item.value}>{item.text}</option>);
+                                    })}
                                 </select>
                             </div>
 
@@ -362,7 +366,7 @@ const BridgeCrypto = () => {
                                 <select name="bridgeTo" id="bridgeTo"
                                     onChange={handleChange}>
                                     {bridgeTo.map(item => {
-                                      return (<option key={item.value} value={item.value}>{item.text}</option>);
+                                        return (<option key={item.value} value={item.value}>{item.text}</option>);
                                     })}
                                 </select>
                             </div>
@@ -375,18 +379,18 @@ const BridgeCrypto = () => {
                     </div>
 
                 </div>
-          
+
                 <footer className="py-7">
-                  <div className="container mx-auto pl-2 pr-2">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-center sm:text-left">
-                      <div className="mb-5 sm:mb-0">&copy; {new Date().getFullYear()}</div>
-                      <div className="flex flex-col items-center sm:flex-row footer__links">
-                        <span></span>
-                          <a href="#"><img src={logo_bscscan} width="80"/></a>
-                          <a href="#"><img src={logo_pancake} width="90"/></a>
-                      </div>
+                    <div className="container mx-auto pl-2 pr-2">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-center sm:text-left">
+                            <div className="mb-5 sm:mb-0">&copy; {new Date().getFullYear()}</div>
+                            <div className="flex flex-col items-center sm:flex-row footer__links">
+                                <span></span>
+                                <a href="#"><img src={logo_bscscan} width="80" /></a>
+                                <a href="#"><img src={logo_pancake} width="90" /></a>
+                            </div>
+                        </div>
                     </div>
-                  </div>
                 </footer>
 
             </div>
