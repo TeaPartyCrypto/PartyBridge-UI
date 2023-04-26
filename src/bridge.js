@@ -423,7 +423,7 @@ const BridgeCrypto = () => {
                         </div>
                         <div className="box box--small">
                             <p className="text-lg">Id: <span className="font-semibold">{clientId}</span></p>
-                            <p className="text-lg">{logMessage}</p>
+                            <p className="text-lg break-words">{logMessage}</p>
                         </div>
                     </div>
 
