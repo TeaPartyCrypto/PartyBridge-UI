@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import Web3 from 'web3';
 import { v4 as uuidv4 } from 'uuid';
 import './style.css';
-import logo_bscscan from './img/logo-bscscan.svg';
-import logo_pancake from './img/logo-pancake.svg';
 
 const BridgeCrypto = () => {
     const [formData, setFormData] = useState({
@@ -308,7 +306,7 @@ const BridgeCrypto = () => {
                     <div className="container mx-auto pl-2 pr-2">
                         <div className="grid grid-cols-12 gap-4 content-center">
                             <div className=" col-span-4 navbar__logo">
-                                Cross Chain Bridge
+                                Party Bridge
                             </div>
                             <div className="col-span-8 flex flex-row justify-end items-center">
                                 <button className="btn btn--outline btn--metamask mr-5"
@@ -434,11 +432,9 @@ const BridgeCrypto = () => {
                 <footer className="py-7">
                     <div className="container mx-auto pl-2 pr-2">
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-center sm:text-left">
-                            <div className="mb-5 sm:mb-0">&copy; {new Date().getFullYear()}</div>
+                            <div className="mb-5 sm:mb-0">&copy; {new Date().getFullYear()} All rights reserved</div>
                             <div className="flex flex-col items-center sm:flex-row footer__links">
                                 <span></span>
-                                <a href="#"><img src={logo_bscscan} width="80" /></a>
-                                <a href="#"><img src={logo_pancake} width="90" /></a>
                             </div>
                         </div>
                     </div>
