@@ -9,29 +9,19 @@ import (
 	controller "github.com/TeaPartyCrypto/partybridge/be/pkg"
 )
 
-type Account struct {
-	PrivateKey  string `json:"PrivateKey"`
-	PublicKey   string `json:"PublicKey"`
-	ProgramHash string `json:"ProgramHash"`
-}
-
 func main() {
 	c := &controller.Controller{}
-	// look for a local NKN wallet
-	// if one is not found, create one
-	// and save it to the local file system
-	// for future use.
-
-	if c.SAASAddress == "" {
-		c.SAASAddress = "https://teaparty-partybridge.ngrok.io"
-	}
-
 	// create a new sugard logger
 	var err error
 	c.Log, err = zap.NewProduction()
 	if err != nil {
 		log.Fatal(err)
 		return
+	}
+
+	if c.SAASAddress == "" {
+		c.SAASAddress = "http://143.42.111.52:8080"
+		// c.SAASAddress = "http://192.168.50.90:8080"
 	}
 
 	http.HandleFunc("/", c.RootHandler)

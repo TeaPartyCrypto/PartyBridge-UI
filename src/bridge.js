@@ -1,12 +1,389 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Web3 from 'web3';
+import { v4 as uuidv4 } from 'uuid';
 import './style.css';
 import logo_bscscan from './img/logo-bscscan.svg';
 import logo_pancake from './img/logo-pancake.svg';
 
+const bridge_abi = [
+    {
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "name",
+                "type": "string"
+            },
+            {
+                "internalType": "string",
+                "name": "symbol",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "Approval",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "previousOwner",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "OwnershipTransferred",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "from",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "to",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "Transfer",
+        "type": "event"
+    },
+    {
+        "stateMutability": "nonpayable",
+        "type": "fallback"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            }
+        ],
+        "name": "allowance",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "approve",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "balanceOf",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "burn",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [
+            {
+                "internalType": "uint8",
+                "name": "",
+                "type": "uint8"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "subtractedValue",
+                "type": "uint256"
+            }
+        ],
+        "name": "decreaseAllowance",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "addedValue",
+                "type": "uint256"
+            }
+        ],
+        "name": "increaseAllowance",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "mint",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "name",
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "symbol",
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "totalSupply",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "to",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "transfer",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "from",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "to",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "transferFrom",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "transferOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]
+
+const wOCTATokenContractAddress = "0x52220a92B75b9121352A1ddC50e4b8088b758C9b"
+const wGRAMSTokenContractAddress = "0x243817422319Ba775Ef23485711C82Efe8100951"
+
 const BridgeCrypto = () => {
-    const web3 = new Web3();
 
     const [formData, setFormData] = useState({
         currency: 'octa',
@@ -16,36 +393,154 @@ const BridgeCrypto = () => {
         shippingAddress: '',
     });
 
-    const [account, setAccount] = useState('Connect Metamask');
-    const [balance, setBalance] = useState('0');
+    const octaAssets = [
+        { value: 'octa', text: 'OCTA' },
+        { value: 'wgrams', text: 'wGRAMS' }
+    ];
+    const partyAssets = [
+        { value: 'grams', text: 'GRAMS' },
+        { value: 'wocta', text: 'wOCTA' }
+    ];
 
+    const octaBridgeTo = [
+        { value: 'grams', text: 'PartyChain' }
+    ];
+
+    const partyBridgeTo = [
+        { value: 'octa', text: 'OctaSpace' }
+    ];
+
+    const [ws, setWs] = useState(null);
+    const [clientId, setClientID] = useState(uuidv4());
+    const URL = "ws://143.42.111.52:8080/ws";
+
+    const [logMessage, setLogMessage] = useState(null);
+    const [account, setAccount] = useState(null);
+    const [balance, setBalance] = useState('0');
+    const [fee, setFee] = useState('0');
+    const [minimum, setMinimum] = useState('1');
+    const [assets, setAssets] = useState(octaAssets);
+    const [asset, setAsset] = useState(octaAssets[0].value); // octaAssets[0].value
+    const [bridgeTo, setBridgeTo] = useState(octaBridgeTo);
+    const [web3, setWeb3] = useState(null);
+
+
+    const loadWeb3 = async () => {
+        if (window.ethereum) {
+          const web3Instance = new Web3(window.ethereum);
+          setWeb3(web3Instance);
+        } else {
+          alert("MetaMask is not installed. Please install MetaMask and try again.");
+        }
+      };
+
+      
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        if (e.target.name === 'fromChain') {
+            if (e.target.value === 'octa') {
+                setAssets(octaAssets);
+                setBridgeTo(octaBridgeTo);
+                setFormData({ ...formData, [e.target.name]: e.target.value, bridgeTo: octaBridgeTo[0].value });
+            }
+            if (e.target.value === 'grams') {
+                setAssets(partyAssets);
+                setBridgeTo(partyBridgeTo);
+                setFormData({ ...formData, [e.target.name]: e.target.value, bridgeTo: partyBridgeTo[0].value });
+            }
+        } else {
+            setFormData({ ...formData, [e.target.name]: e.target.value });
+        }
     };
 
-    // connect to metamask on page load
     React.useEffect(() => {
+        if (window.ethereum) {
+          window.ethereum.on("chainChanged", chainChanged);
+        }
         connectMetaMask();
-    }, []);
-    
+        loadWeb3(); // Add this line
+        initWebSocketConnection();
+      }, []);
+
+    const reconnectInterval = useRef(null);
+
+    const initWebSocketConnection = () => {
+        const websocket = new WebSocket(`${URL}?id=${clientId}`);
+
+        websocket.onopen = () => {
+            console.log('WebSocket connection opened');
+            if (reconnectInterval.current) {
+                clearInterval(reconnectInterval.current);
+                reconnectInterval.current = null;
+            }
+        };
+
+        websocket.onmessage = (event) => {
+            console.log('WebSocket message received:', event.data);
+        };
+
+        websocket.onclose = () => {
+            console.log('WebSocket connection closed');
+            if (!reconnectInterval.current) {
+                reconnectInterval.current = setInterval(() => {
+                    console.log('Attempting to reconnect...');
+                    initWebSocketConnection();
+                }, 5000); // Reconnect every 5 seconds
+            }
+        };
+
+        websocket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        setWs(websocket);
+    };
+
+    const chainChanged = async () => {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        updateBalance(accounts[0]);
+    };
+
     const connectMetaMask = async () => {
         if (window.ethereum) {
             try {
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts'});
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
                 setFormData({ ...formData, shippingAddress: accounts[0] });
 
-                const balance = await window.ethereum.request({
-                  method: "eth_getBalance",
-                  params: [accounts[0], "latest"],
-                }); 
-                setBalance(parseInt(web3.utils.fromWei(parseInt(balance).toString(), 'ether')).toFixed(5));
-                setAccount(accounts[0].slice(0, 6) + '...' + accounts[0].slice(-4));
+                setAccount(accounts[0]);
+                updateBalance(accounts[0]);
             } catch (error) {
                 console.error('Error:', error);
             }
         } else {
-            alert('MetaMask is not installed. Please install MetaMask and try again.');
+            setLogMessage("MetaMask is not installed. Please install MetaMask and try again.");
+            //alert('MetaMask is not installed. Please install MetaMask and try again.');
         }
+    };
+
+    const updateBalance = async (account) => {
+        if (window.ethereum.isConnected()) {
+            const balance = await window.ethereum.request({
+                method: "eth_getBalance",
+                params: [account, "latest"],
+            });
+            setBalance(parseFloat(web3.utils.fromWei(parseInt(balance).toString(), 'ether')).toFixed(5));
+        } else {
+            setBalance('0');
+        }
+    };
+
+    const requestChangeToOctaSpaceNetwork = async () => {
+        await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: web3.utils.toHex(800001) }],
+        });
+    };
+
+    const requestChangeToPartyChainNetwork = async () => {
+        await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: web3.utils.toHex(1773) }],
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -67,13 +562,26 @@ const BridgeCrypto = () => {
             }
         }
 
+        // Validate that the user has selected the correct network
+        try {
+            if (formData.fromChain === 'octa') {
+                await requestChangeToOctaSpaceNetwork();
+            }
+            if (formData.fromChain === 'grams') {
+                await requestChangeToPartyChainNetwork();
+            }
+        } catch (error) {
+            setLogMessage('Error switching networks:' + error);
+            console.error('Error switching networks:', error);
+            return;
+        }
+
         // Convert the amount into a BigInt
-        //const web3 = new Web3();
         const amountInWei = parseInt(web3.utils.toWei(formData.amount, 'ether'))
 
         try {
             const response = await axios.post(
-                '/requestbridge',
+                `/requestbridge?id=${clientId}`,
                 {
                     ...formData,
                     amount: amountInWei,
@@ -83,66 +591,123 @@ const BridgeCrypto = () => {
                         'Content-Type': 'application/json',
                     },
                 },
-            );
-            console.log(response.data);
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts'});
-            // ask for eth_sendTransaction permission
-           await window.ethereum.request({
-                method: 'wallet_requestPermissions',
-                params: [
-                    {
-                        eth_accounts: { 
-                            // this is the address that will be used to send the transaction
-                            accounts: [accounts[0]],
-                        },
-                    },
-                ],
+            ).catch((error) => {
+                if (error.response) {
+                    console.error("Server responded with an error:", error.response.data);
+                } else if (error.request) {
+                    console.error("No response was received from the server:", error.request);
+                } else {
+                    console.error("Axios error:", error.message);
+                }
             });
-            
-            alert(JSON.stringify(response.data));
-            var responseAmountString = JSON.stringify(response.data.ammount);
-            // create a transaction
-            const transaction = await window.ethereum.request({
-                method: 'eth_sendTransaction',
-                params: [
-                    {
-                        from: formData.shippingAddress,
-                        to: response.data.address,
-                        value:responseAmountString
-                    },
-                ],
-            });
-            console.log(transaction);
 
+            if (!response) {
+                setLogMessage("No response object");
+                console.error("No response object");
+                return;
+            }
+            console.log(response.data)
+
+            // Verify the response.data has valid fields
+            if (!response.data.address || !response.data.amount) {
+                alert('Invalid response from server. Please try again.');
+                return;
+            }
+
+            // Convert the response amount to a hexadecimal string
+            var responseAmountHex = web3.utils.toHex(response.data.amount);
+
+            // if the form data contains wgrams or wocta then we need to handle the contract 
+            if (formData.currency === 'wgrams' || formData.currency === 'wocta') {
+                console.log('Handling contract for ' + formData.currency);
+                // Set the contract address of the selected asset
+                let assetContractAddress;
+                let tokenContract
+                if (formData.currency === 'wocta') {
+                    assetContractAddress = '0x52220a92B75b9121352A1ddC50e4b8088b758C9b';
+                    tokenContract = new web3.eth.Contract(bridge_abi, wOCTATokenContractAddress);
+                } else if (formData.currency === 'wgrams') {
+                    assetContractAddress = '0x243817422319Ba775Ef23485711C82Efe8100951';
+                    tokenContract = new web3.eth.Contract(bridge_abi, wGRAMSTokenContractAddress);
+                } else {
+                    alert('Invalid asset selected. Please try again.');
+                    return;
+                }
+
+                // Create a transaction
+                try {
+                    // if the currency is wgrams or wocta then we need to handle the contract
+        
+                    const transferData = tokenContract.methods.transfer(response.data.address, responseAmountHex).encodeABI();
+                    const transactionParameters = {
+                        to: assetContractAddress,
+                        from: formData.shippingAddress,
+                        data: transferData,
+                    };
+            
+                    const transactionHash = await window.ethereum.request({
+                        method: 'eth_sendTransaction',
+                        params: [transactionParameters],
+                    });
+
+                    setLogMessage("Transaction Hash: " + transactionHash);
+                    console.log('Transaction Hash:', transactionHash);
+                } catch (error) {
+                    setLogMessage(error);
+                    console.error('Error sending transaction:', error);
+                }
+            } else {
+                // Create a transaction
+                try {
+                    const transaction = await window.ethereum.request({
+                        method: 'eth_sendTransaction',
+                        params: [
+                            {
+                                from: formData.shippingAddress,
+                                to: response.data.address,
+                                value: responseAmountHex,
+                            },
+                        ],
+                    });
+                    setLogMessage("TxId: " + transaction);
+                    console.log(transaction);
+                }
+                catch (error) {
+                    setLogMessage(error);
+                    console.error('Error sending transaction:', error);
+                }
+            }
         } catch (error) {
-            console.error('Error:', error);
+            setLogMessage(error);
+            console.error('Error sending transaction:', error);
         }
     };
+
 
     return (
         <div>
             <header>
-                <nav class="navbar">
-                    <div class="container mx-auto pl-2 pr-2">
-                        <div class="grid grid-cols-12 gap-4 content-center">
-                            <div class=" col-span-4 navbar__logo">
+                <nav className="navbar">
+                    <div className="container mx-auto pl-2 pr-2">
+                        <div className="grid grid-cols-12 gap-4 content-center">
+                            <div className=" col-span-4 navbar__logo">
                                 Cross Chain Bridge
                             </div>
-                            <div class="col-span-8 flex flex-row justify-end items-center">
-                                <button class="btn btn--outline btn--metamask mr-5"
+                            <div className="col-span-8 flex flex-row justify-end items-center">
+                                <button className="btn btn--outline btn--metamask mr-5"
                                     onClick={connectMetaMask}
-                                >{account}</button>
-                                <div class="theme-toggle">
-                                    <input type="checkbox" class="theme-toggle__input" id="theme-toggle__input" />
-                                    <label for="theme-toggle__input" class="theme-toggle__label">
-                                        <span class="theme-toggle__icon theme-toggle__dark">
+                                >{account ? account.slice(0, 6) + '...' + account.slice(-4) : 'Connect MetaMask'}</button>
+                                <div className="theme-toggle">
+                                    <input type="checkbox" className="theme-toggle__input" id="theme-toggle__input" />
+                                    <label htmlFor="theme-toggle__input" className="theme-toggle__label">
+                                        <span className="theme-toggle__icon theme-toggle__dark">
                                             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                 <path d="M17.4776 10.2333C17.4172 10.2068 17.3493 10.2024 17.286 10.2211C17.2227 10.2398 17.1681 10.2802 17.1317 10.3352C16.4611 11.3304 15.5539 12.1434 14.4915 12.7015C13.4292 13.2596 12.2449 13.5452 11.045 13.5327C9.10715 13.5167 7.29498 12.7574 5.94224 11.3947C5.26518 10.7137 4.73203 9.90334 4.37453 9.012C4.01702 8.12067 3.84246 7.16652 3.86123 6.20635C3.88 5.24617 4.09172 4.29958 4.48379 3.42289C4.87586 2.54621 5.44027 1.75735 6.14344 1.10325C6.19154 1.05844 6.22245 0.998216 6.23082 0.933013C6.23919 0.86781 6.22449 0.801734 6.18927 0.746229C6.15405 0.690724 6.10052 0.649286 6.03796 0.629095C5.9754 0.608903 5.90775 0.611229 5.84672 0.635669C4.23625 1.27439 2.85241 2.37815 1.87157 3.80627C0.72077 5.48216 0.196743 7.50971 0.391396 9.53333C0.586048 11.557 1.48695 13.4474 2.9361 14.8732C4.58187 16.4929 6.76975 17.3848 9.0966 17.3848C11.1064 17.3843 13.0555 16.6957 14.6196 15.4336C16.1501 14.1949 17.2155 12.474 17.6418 10.5517C17.6563 10.4878 17.6479 10.4208 17.6178 10.3625C17.5878 10.3043 17.5381 10.2585 17.4776 10.2333ZM14.354 15.1059C12.8651 16.3072 11.0097 16.9625 9.0966 16.9629C6.88112 16.9629 4.79836 16.114 3.23201 14.5725C1.85354 13.2163 0.996548 11.4181 0.81134 9.49316C0.626131 7.56827 1.12453 5.63961 2.21912 4.04544C3.01267 2.88994 4.08594 1.95424 5.33882 1.32561C4.06467 2.76954 3.38717 4.64389 3.44362 6.56877C3.50007 8.49366 4.28627 10.3251 5.64285 11.6919C7.07445 13.134 8.99173 13.9376 11.0414 13.9545C11.0631 13.9545 11.0845 13.9548 11.1062 13.9548C12.2414 13.9571 13.3629 13.7074 14.3898 13.2236C15.4167 12.7399 16.3234 12.0341 17.0445 11.1574C16.5538 12.7087 15.6183 14.0817 14.354 15.1058V15.1059Z" fill="white" />
                                             </svg>
                                         </span>
-                                        <span class="theme-toggle__icon theme-toggle__light">
+                                        <span className="theme-toggle__icon theme-toggle__light">
                                             <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <g clip-path="url(#clip0_119_125)">
+                                                <g clipPath="url(#clip0_119_125)">
                                                     <path d="M8.98996 14.4581C5.97492 14.4581 3.52179 12.0051 3.52179 8.9899C3.52179 5.97486 5.97492 3.52173 8.98996 3.52173C12.0052 3.52173 14.4581 5.97486 14.4581 8.9899C14.4581 12.0051 12.0052 14.4581 8.98996 14.4581ZM8.98996 3.91688C6.19265 3.91688 3.91695 6.19259 3.91695 8.9899C3.91695 11.787 6.19265 14.0629 8.98996 14.0629C11.7871 14.0629 14.063 11.787 14.063 8.9899C14.063 6.19259 11.7871 3.91688 8.98996 3.91688Z" fill="black" />
                                                     <path d="M8.98994 2.28271C8.88087 2.28271 8.79236 2.19419 8.79236 2.08513V0.296455C8.79236 0.187392 8.88087 0.098877 8.98994 0.098877C9.099 0.098877 9.18751 0.187392 9.18751 0.296455V2.08513C9.18751 2.19419 9.099 2.28271 8.98994 2.28271Z" fill="black" />
                                                     <path d="M8.98994 17.8809C8.88087 17.8809 8.79236 17.7925 8.79236 17.6833V15.8946C8.79236 15.7853 8.88087 15.697 8.98994 15.697C9.099 15.697 9.18751 15.7853 9.18751 15.8946V17.6833C9.18751 17.7925 9.099 17.8809 8.98994 17.8809Z" fill="black" />
@@ -160,7 +725,7 @@ const BridgeCrypto = () => {
                                                 </defs>
                                             </svg>
                                         </span>
-                                        <span class="theme-toggle__ball"></span>
+                                        <span className="theme-toggle__ball"></span>
                                     </label>
                                 </div>
                             </div>
@@ -175,23 +740,22 @@ const BridgeCrypto = () => {
                         <div className="box relative z-30">
 
                             <div className="box__select-group">
-                                <label htmlFor="choose-network-1">Choose network</label>
+                                <label htmlFor="choose-network-1">Network</label>
                                 <select name="fromChain" id="fromChain"
                                     onChange={handleChange}>
-                                    <option value="octa">OCTA NETWORK</option>
-                                    <option value="grams">PARTYCHAIN</option>
+                                    <option value="octa">OctaSpace</option>
+                                    <option value="grams">PartyChain</option>
                                 </select>
                             </div>
 
                             <div className="box__select-group">
-                                <label htmlFor="choose-coin-1">Choose coin</label>
+                                <label htmlFor="choose-coin-1">Asset</label>
                                 <select name="currency" id="currency"
                                     onChange={handleChange}
                                 >
-                                    <option value="octa">OCTA</option>
-                                    <option value="grams">GRAM</option>
-                                    <option value="wocta">wOCTA</option>
-                                    <option value="wgrams">wGRAM</option>
+                                    {assets.map(item => {
+                                        return (<option key={item.value} value={item.value}>{item.text}</option>);
+                                    })}
                                 </select>
                             </div>
 
@@ -206,8 +770,8 @@ const BridgeCrypto = () => {
                         </div>
                         <div className="box box--small">
                             <p className="text-lg">Balance: <span className="font-semibold">{balance}</span></p>
-                            <p className="text-lg">Fee: <span className="font-semibold"></span></p>
-                            <p className="text-lg">Minimum: <span className="font-semibold"></span></p>
+                            <p className="text-lg">Fee: <span className="font-semibold">{fee}</span></p>
+                            <p className="text-lg">Minimum: <span className="font-semibold">{minimum}</span></p>
                         </div>
                     </div>
 
@@ -221,8 +785,6 @@ const BridgeCrypto = () => {
                                     <path d="M292 18L262 0.679492V35.3205L292 18ZM0 21H265V15H0L0 21Z" fill="#BE6432" />
                                 </svg>
                             </div>
-                            <p className="pt-12 mt-10 font-bold text-2xl sm:pl-0 pl-20">Monitor</p>
-                            <p className="mt-2 text-lg sm:pl-0 pl-20 mb-5 sm:mb-0">Loading...</p>
                             <button className="btn btn--main sm:ml-0 ml-20"
                                 onClick={handleSubmit}
                             >Request swap</button>
@@ -234,47 +796,35 @@ const BridgeCrypto = () => {
                         <div className="box relative z-10">
 
                             <div className="box__select-group">
-                                <label htmlFor="bridgeTo">Choose network</label>
+                                <label htmlFor="bridgeTo">Network</label>
                                 <select name="bridgeTo" id="bridgeTo"
                                     onChange={handleChange}>
-                                    <option value="grams">PARTYCHAIN</option>
-                                    <option value="octa">OCTA NETWORK</option>
+                                    {bridgeTo.map(item => {
+                                        return (<option key={item.value} value={item.value}>{item.text}</option>);
+                                    })}
                                 </select>
                             </div>
 
-                            {/* <div className="box__select-group">
-                                <label htmlFor="choose-coin-2">Choose coin</label>
-                                <select name="choose-coin-2" id="choose-coin-2">
-                                    <option value="gram">GRAM</option>
-                                    <option value="octa">OCTA</option>
-                                </select>
-                            </div> */}
-
-                            {/* if the selected network is grams show wGRAMS if it is octa then choose wOCTA */}
-                            {/* <p className="text-xl pt-4">
-                                Will be received: <span className="font-bold text-2xl text-accent-primary">3000</span>{" "}
-                                {formData.fromChain === "grams" ? "wGRAMS" : formData.fromChain === "octa" ? "wOCTA" : ""}
-                            </p> */}
-
                         </div>
-                        <div className="box box--small flex items-center">
-                            <p className="text-lg">Balance: <span className="font-semibold"></span></p>
+                        <div className="box box--small">
+                            <p className="text-lg">Id: <span className="font-semibold">{clientId}</span></p>
+                            <p className="text-lg">{logMessage}</p>
                         </div>
                     </div>
 
                 </div>
-          
+
                 <footer className="py-7">
-                  <div className="container mx-auto pl-2 pr-2">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-center sm:text-left">
-                      <div className="mb-5 sm:mb-0">&copy; 2023</div>
-                      <div className="flex flex-col items-center sm:flex-row footer__links">
-                        <span></span>
-                          <a href="#"><img src={logo_bscscan} width="80"/></a>
-                          <a href="#"><img src={logo_pancake} width="90"/></a>
-                      </div>
+                    <div className="container mx-auto pl-2 pr-2">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-center sm:text-left">
+                            <div className="mb-5 sm:mb-0">&copy; {new Date().getFullYear()}</div>
+                            <div className="flex flex-col items-center sm:flex-row footer__links">
+                                <span></span>
+                                <a href="#"><img src={logo_bscscan} width="80" /></a>
+                                <a href="#"><img src={logo_pancake} width="90" /></a>
+                            </div>
+                        </div>
                     </div>
-                  </div>
                 </footer>
 
             </div>

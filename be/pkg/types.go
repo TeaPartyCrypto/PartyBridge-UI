@@ -9,8 +9,9 @@ import (
 type Controller struct {
 	rootHandler http.Handler
 	SAASAddress string
+	Log         *zap.Logger
 
-	Log *zap.Logger
+	ID string
 }
 
 type BridgeRequest struct {
@@ -19,4 +20,5 @@ type BridgeRequest struct {
 	Amount          int    `json:"amount"`
 	BridgeTo        string `json:"bridgeTo"`
 	ShippingAddress string `json:"shippingAddress"`
+	ClientID        string `json:"clientId"`
 }
