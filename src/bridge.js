@@ -223,9 +223,9 @@ const BridgeCrypto = () => {
 
       var explorer = '';
 
-      if (formData.fromChain == 'octa') {
+      if (formData.fromChain === 'octa') {
         explorer = "https://explorer.octa.space/tx/";
-      } else if (formData.fromChain == 'grams') {
+      } else if (formData.fromChain === 'grams') {
         explorer = "https://tea.mining4people.com/tx/";
       }
 
