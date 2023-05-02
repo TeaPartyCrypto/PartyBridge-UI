@@ -592,6 +592,19 @@ const BridgeCrypto = () => {
       }
     };
 
+    const displayTransactionId = async (tx) => {
+
+      var explorer = '';
+
+      if (formData.fromChain == 'octa') {
+        explorer = "https://explorer.octa.space/tx/";
+      } else if (formData.fromChain == 'grams') {
+        explorer = "https://tea.mining4people.com/tx/";
+      }
+
+      setLogMessage('Transaction: <a href="' + explorer + tx + '">' + tx.slice(0, 12) + '...' + tx.slice(-4) + '</a>');
+    };
+
     const handleSubmit = async (e) => {
         console.log(formData);
         e.preventDefault();
@@ -699,7 +712,7 @@ const BridgeCrypto = () => {
                         params: [transactionParameters],
                     });
 
-                    setLogMessage("Transaction Hash: " + transactionHash);
+                    displayTransactionId(transactionHash);
                     console.log('Transaction Hash:', transactionHash);
                 } catch (error) {
                     setLogMessage(error);
@@ -718,7 +731,7 @@ const BridgeCrypto = () => {
                             },
                         ],
                     });
-                    setLogMessage("TxId: " + transaction);
+                    displayTransactionId(transaction);
                     console.log(transaction);
                 }
                 catch (error) {
@@ -857,7 +870,7 @@ const BridgeCrypto = () => {
                         </div>
                         <div className="box box--small">
                             <p className="text-lg">Id: <span className="font-semibold">{clientId}</span></p>
-                            <p className="text-lg break-words">{logMessage}</p>
+                            <div className="text-lg break-words" dangerouslySetInnerHTML={{__html: logMessage}} />
                         </div>
                     </div>
 
