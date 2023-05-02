@@ -35,6 +35,16 @@ const BridgeCrypto = () => {
         { value: 'octa', text: 'OctaSpace' }
     ];
 
+    const octaAssetsTo = {
+      'octa': 'wOCTA',
+      'wgrams': 'GRAMS'
+    };
+
+    const partyAssetsTo = {
+      'grams': 'wGRAMS',
+      'wocta': 'OCTA'
+    };
+
     const [ws, setWs] = useState(null);
     const [clientId, setClientID] = useState(uuidv4());
     const URL = "ws://143.42.111.52:8080/ws";
@@ -47,8 +57,9 @@ const BridgeCrypto = () => {
     const [assets, setAssets] = useState(octaAssets);
     const [asset, setAsset] = useState(octaAssets[0].value); // octaAssets[0].value
     const [bridgeTo, setBridgeTo] = useState(octaBridgeTo);
+    const [assetsTo, setAssetsTo] = useState('wOCTA');
     const [web3, setWeb3] = useState(null);
-
+    const [currency, setCurrency] = useState('octa');
 
     const loadWeb3 = async () => {
         if (window.ethereum) {
@@ -59,22 +70,34 @@ const BridgeCrypto = () => {
         }
       };
 
-      
     const handleChange = (e) => {
         if (e.target.name === 'fromChain') {
             if (e.target.value === 'octa') {
                 setAssets(octaAssets);
                 setBridgeTo(octaBridgeTo);
                 setFormData({ ...formData, [e.target.name]: e.target.value, bridgeTo: octaBridgeTo[0].value });
+                requestChangeToOctaSpaceNetwork();
+                setAssetsTo(octaAssetsTo[e.target.value]);
             }
             if (e.target.value === 'grams') {
                 setAssets(partyAssets);
                 setBridgeTo(partyBridgeTo);
                 setFormData({ ...formData, [e.target.name]: e.target.value, bridgeTo: partyBridgeTo[0].value });
+                requestChangeToPartyChainNetwork();
+                setAssetsTo(partyAssetsTo[e.target.value]);
             }
         } else {
             setFormData({ ...formData, [e.target.name]: e.target.value });
         }
+        if (e.target.name === 'currency') {
+          if (formData.fromChain === 'octa') {
+            setAssetsTo(octaAssetsTo[e.target.value]);
+          } else if (formData.fromChain === 'grams') {
+            setAssetsTo(partyAssetsTo[e.target.value]);
+          };
+          setCurrency(e.target.value);
+          updateBalance(account, e.target.value);
+        };
     };
 
     React.useEffect(() => {
@@ -122,7 +145,7 @@ const BridgeCrypto = () => {
 
     const chainChanged = async () => {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        updateBalance(accounts[0]);
+        updateBalance(accounts[0], formData.currency);
     };
 
     const connectMetaMask = async () => {
@@ -132,7 +155,7 @@ const BridgeCrypto = () => {
                 setFormData({ ...formData, shippingAddress: accounts[0] });
 
                 setAccount(accounts[0]);
-                updateBalance(accounts[0]);
+                await updateBalance(accounts[0], formData.currency);
             } catch (error) {
                 console.error('Error:', error);
             }
@@ -142,17 +165,37 @@ const BridgeCrypto = () => {
         }
     };
 
-    const updateBalance = async (account) => {
+    const updateBalance = async (account, currency) => {
+      let assetContractAddress;
+      let tokenContract
+
+      if (currency === 'wocta') {
+        assetContractAddress = wOCTATokenContractAddress;
+        tokenContract = new web3.eth.Contract(bridge_abi, wOCTATokenContractAddress);
+        updateTokenBalance(tokenContract, account);
+      } else if (currency === 'wgrams') {
+        assetContractAddress = wGRAMSTokenContractAddress;
+        tokenContract = new web3.eth.Contract(bridge_abi, wGRAMSTokenContractAddress);
+        updateTokenBalance(tokenContract, account);
+      } else {
         if (window.ethereum.isConnected()) {
             const balance = await window.ethereum.request({
                 method: "eth_getBalance",
                 params: [account, "latest"],
             });
-            setBalance(parseFloat(web3.utils.fromWei(parseInt(balance).toString(), 'ether')).toFixed(5));
+            const w3 = new Web3(); // XXX
+            setBalance(parseFloat(w3.utils.fromWei(parseInt(balance).toString(), 'ether')).toFixed(5));
         } else {
             setBalance('0');
         }
+      }
     };
+
+    const updateTokenBalance = async (tokenContract, account) => {
+      const balance = await tokenContract.methods.balanceOf(account).call();
+      const w3 = new Web3(); // XXX
+      setBalance(parseFloat(w3.utils.fromWei(parseInt(balance).toString(), 'ether')).toFixed(5));
+    }
 
     const requestChangeToOctaSpaceNetwork = async () => {
       try {
@@ -493,6 +536,19 @@ const BridgeCrypto = () => {
                                     })}
                                 </select>
                             </div>
+
+                            <div className="box__select-group">
+                                <label htmlFor="assetsTo">Asset</label>
+                                <select name="assetsTo" id="assetsTo">
+                                  <option>{assetsTo}</option>
+                                </select>
+                            </div>
+
+                            <div className="box__input-group">
+                                <label htmlFor="amount" className="mr-2">Amount:</label>
+                                <input name="amount" type="number" id="amount" value={formData.amount} readOnly disabled/>
+                            </div>
+
 
                         </div>
                         <div className="box box--small">
