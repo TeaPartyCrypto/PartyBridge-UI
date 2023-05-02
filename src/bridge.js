@@ -59,7 +59,6 @@ const BridgeCrypto = () => {
     const [bridgeTo, setBridgeTo] = useState(octaBridgeTo);
     const [assetsTo, setAssetsTo] = useState('wOCTA');
     const [web3, setWeb3] = useState(null);
-    const [currency, setCurrency] = useState('octa');
 
     const loadWeb3 = async () => {
         if (window.ethereum) {
@@ -97,7 +96,6 @@ const BridgeCrypto = () => {
           } else if (formData.fromChain === 'grams') {
             setAssetsTo(partyAssetsTo[e.target.value]);
           };
-          setCurrency(e.target.value);
           updateBalance(account, e.target.value);
         };
     };
@@ -168,15 +166,12 @@ const BridgeCrypto = () => {
     };
 
     const updateBalance = async (account, currency) => {
-      let assetContractAddress;
       let tokenContract
 
       if (currency === 'wocta') {
-        assetContractAddress = wOCTATokenContractAddress;
         tokenContract = new web3.eth.Contract(bridge_abi, wOCTATokenContractAddress);
         updateTokenBalance(tokenContract, account);
       } else if (currency === 'wgrams') {
-        assetContractAddress = wGRAMSTokenContractAddress;
         tokenContract = new web3.eth.Contract(bridge_abi, wGRAMSTokenContractAddress);
         updateTokenBalance(tokenContract, account);
       } else {
