@@ -4,7 +4,385 @@ import Web3 from 'web3';
 import { v4 as uuidv4 } from 'uuid';
 import './style.css';
 
+const bridge_abi = [
+    {
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "name",
+                "type": "string"
+            },
+            {
+                "internalType": "string",
+                "name": "symbol",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "Approval",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "previousOwner",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "OwnershipTransferred",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "from",
+                "type": "address"
+            },
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "to",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            }
+        ],
+        "name": "Transfer",
+        "type": "event"
+    },
+    {
+        "stateMutability": "nonpayable",
+        "type": "fallback"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "owner",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            }
+        ],
+        "name": "allowance",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "approve",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            }
+        ],
+        "name": "balanceOf",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "burn",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [
+            {
+                "internalType": "uint8",
+                "name": "",
+                "type": "uint8"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "subtractedValue",
+                "type": "uint256"
+            }
+        ],
+        "name": "decreaseAllowance",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "spender",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "addedValue",
+                "type": "uint256"
+            }
+        ],
+        "name": "increaseAllowance",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "account",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "mint",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "name",
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "symbol",
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "",
+                "type": "string"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "totalSupply",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "to",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "transfer",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "from",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "to",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+            }
+        ],
+        "name": "transferFrom",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "newOwner",
+                "type": "address"
+            }
+        ],
+        "name": "transferOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]
+
+const wOCTATokenContractAddress = "0x52220a92B75b9121352A1ddC50e4b8088b758C9b"
+const wGRAMSTokenContractAddress = "0x243817422319Ba775Ef23485711C82Efe8100951"
+
 const BridgeCrypto = () => {
+
     const [formData, setFormData] = useState({
         currency: 'octa',
         fromChain: 'octa',
@@ -33,7 +411,6 @@ const BridgeCrypto = () => {
     const [ws, setWs] = useState(null);
     const [clientId, setClientID] = useState(uuidv4());
     const URL = "ws://143.42.111.52:8080/ws";
-    const web3 = new Web3();
 
     const [logMessage, setLogMessage] = useState(null);
     const [account, setAccount] = useState(null);
@@ -41,8 +418,21 @@ const BridgeCrypto = () => {
     const [fee, setFee] = useState('0');
     const [minimum, setMinimum] = useState('1');
     const [assets, setAssets] = useState(octaAssets);
+    const [asset, setAsset] = useState(octaAssets[0].value); // octaAssets[0].value
     const [bridgeTo, setBridgeTo] = useState(octaBridgeTo);
+    const [web3, setWeb3] = useState(null);
 
+
+    const loadWeb3 = async () => {
+        if (window.ethereum) {
+          const web3Instance = new Web3(window.ethereum);
+          setWeb3(web3Instance);
+        } else {
+          alert("MetaMask is not installed. Please install MetaMask and try again.");
+        }
+      };
+
+      
     const handleChange = (e) => {
         if (e.target.name === 'fromChain') {
             if (e.target.value === 'octa') {
@@ -62,11 +452,12 @@ const BridgeCrypto = () => {
 
     React.useEffect(() => {
         if (window.ethereum) {
-            window.ethereum.on("chainChanged", chainChanged);
-        };
+          window.ethereum.on("chainChanged", chainChanged);
+        }
         connectMetaMask();
+        loadWeb3(); // Add this line
         initWebSocketConnection();
-    }, []);
+      }, []);
 
     const reconnectInterval = useRef(null);
 
@@ -275,29 +666,72 @@ const BridgeCrypto = () => {
             // Convert the response amount to a hexadecimal string
             var responseAmountHex = web3.utils.toHex(response.data.amount);
 
-            // Create a transaction
-            try {
-                const transaction = await window.ethereum.request({
-                    method: 'eth_sendTransaction',
-                    params: [
-                        {
-                            from: formData.shippingAddress,
-                            to: response.data.address,
-                            value: responseAmountHex,
-                        },
-                    ],
-                });
-                setLogMessage("TxId: " + transaction);
-                console.log(transaction);
-            } catch (error) {
-                setLogMessage(error);
-                console.error('Error sending transaction:', error);
+            // if the form data contains wgrams or wocta then we need to handle the contract 
+            if (formData.currency === 'wgrams' || formData.currency === 'wocta') {
+                console.log('Handling contract for ' + formData.currency);
+                // Set the contract address of the selected asset
+                let assetContractAddress;
+                let tokenContract
+                if (formData.currency === 'wocta') {
+                    assetContractAddress = '0x52220a92B75b9121352A1ddC50e4b8088b758C9b';
+                    tokenContract = new web3.eth.Contract(bridge_abi, wOCTATokenContractAddress);
+                } else if (formData.currency === 'wgrams') {
+                    assetContractAddress = '0x243817422319Ba775Ef23485711C82Efe8100951';
+                    tokenContract = new web3.eth.Contract(bridge_abi, wGRAMSTokenContractAddress);
+                } else {
+                    alert('Invalid asset selected. Please try again.');
+                    return;
+                }
+
+                // Create a transaction
+                try {
+                    // if the currency is wgrams or wocta then we need to handle the contract
+        
+                    const transferData = tokenContract.methods.transfer(response.data.address, responseAmountHex).encodeABI();
+                    const transactionParameters = {
+                        to: assetContractAddress,
+                        from: formData.shippingAddress,
+                        data: transferData,
+                    };
+            
+                    const transactionHash = await window.ethereum.request({
+                        method: 'eth_sendTransaction',
+                        params: [transactionParameters],
+                    });
+
+                    setLogMessage("Transaction Hash: " + transactionHash);
+                    console.log('Transaction Hash:', transactionHash);
+                } catch (error) {
+                    setLogMessage(error);
+                    console.error('Error sending transaction:', error);
+                }
+            } else {
+                // Create a transaction
+                try {
+                    const transaction = await window.ethereum.request({
+                        method: 'eth_sendTransaction',
+                        params: [
+                            {
+                                from: formData.shippingAddress,
+                                to: response.data.address,
+                                value: responseAmountHex,
+                            },
+                        ],
+                    });
+                    setLogMessage("TxId: " + transaction);
+                    console.log(transaction);
+                }
+                catch (error) {
+                    setLogMessage(error);
+                    console.error('Error sending transaction:', error);
+                }
             }
         } catch (error) {
             setLogMessage(error);
-            console.error('Error:', error);
+            console.error('Error sending transaction:', error);
         }
     };
+
 
     return (
         <div>
