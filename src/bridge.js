@@ -412,7 +412,7 @@ const BridgeCrypto = () => {
 
     const [ws, setWs] = useState(null);
     const [clientId, setClientID] = useState(uuidv4());
-    const URL = "ws://143.42.111.52:8080/ws";
+    const URL = "ws://139.144.247.80:8080/ws";
 
     const [logMessage, setLogMessage] = useState(null);
     const [account, setAccount] = useState(null);
