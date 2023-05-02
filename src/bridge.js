@@ -1,384 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import Web3 from 'web3';
 import { v4 as uuidv4 } from 'uuid';
+import bridge_abi from './bridge_abi.json';
 import './style.css';
-import logo_bscscan from './img/logo-bscscan.svg';
-import logo_pancake from './img/logo-pancake.svg';
-
-const bridge_abi = [
-    {
-        "inputs": [
-            {
-                "internalType": "string",
-                "name": "name",
-                "type": "string"
-            },
-            {
-                "internalType": "string",
-                "name": "symbol",
-                "type": "string"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "constructor"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "owner",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "spender",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "value",
-                "type": "uint256"
-            }
-        ],
-        "name": "Approval",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "previousOwner",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "newOwner",
-                "type": "address"
-            }
-        ],
-        "name": "OwnershipTransferred",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "from",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "to",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "value",
-                "type": "uint256"
-            }
-        ],
-        "name": "Transfer",
-        "type": "event"
-    },
-    {
-        "stateMutability": "nonpayable",
-        "type": "fallback"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "owner",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "spender",
-                "type": "address"
-            }
-        ],
-        "name": "allowance",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "spender",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "approve",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "account",
-                "type": "address"
-            }
-        ],
-        "name": "balanceOf",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "account",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "burn",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "decimals",
-        "outputs": [
-            {
-                "internalType": "uint8",
-                "name": "",
-                "type": "uint8"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "spender",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "subtractedValue",
-                "type": "uint256"
-            }
-        ],
-        "name": "decreaseAllowance",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "spender",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "addedValue",
-                "type": "uint256"
-            }
-        ],
-        "name": "increaseAllowance",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "account",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "mint",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "name",
-        "outputs": [
-            {
-                "internalType": "string",
-                "name": "",
-                "type": "string"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "owner",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "symbol",
-        "outputs": [
-            {
-                "internalType": "string",
-                "name": "",
-                "type": "string"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "totalSupply",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "to",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "transfer",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "from",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "to",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "transferFrom",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "newOwner",
-                "type": "address"
-            }
-        ],
-        "name": "transferOwnership",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    }
-]
 
 const wOCTATokenContractAddress = "0x52220a92B75b9121352A1ddC50e4b8088b758C9b"
 const wGRAMSTokenContractAddress = "0x243817422319Ba775Ef23485711C82Efe8100951"
@@ -545,6 +170,19 @@ const BridgeCrypto = () => {
         });
     };
 
+    const displayTransactionId = async (tx) => {
+
+      var explorer = '';
+
+      if (formData.fromChain === 'octa') {
+        explorer = "https://explorer.octa.space/tx/";
+      } else if (formData.fromChain === 'grams') {
+        explorer = "https://tea.mining4people.com/tx/";
+      }
+
+      setLogMessage('Transaction: <a href="' + explorer + tx + '">' + tx.slice(0, 12) + '...' + tx.slice(-4) + '</a>');
+    };
+
     const handleSubmit = async (e) => {
         console.log(formData);
         e.preventDefault();
@@ -626,10 +264,10 @@ const BridgeCrypto = () => {
                 let assetContractAddress;
                 let tokenContract
                 if (formData.currency === 'wocta') {
-                    assetContractAddress = '0x52220a92B75b9121352A1ddC50e4b8088b758C9b';
+                    assetContractAddress = wOCTATokenContractAddress;
                     tokenContract = new web3.eth.Contract(bridge_abi, wOCTATokenContractAddress);
                 } else if (formData.currency === 'wgrams') {
-                    assetContractAddress = '0x243817422319Ba775Ef23485711C82Efe8100951';
+                    assetContractAddress = wGRAMSTokenContractAddress;
                     tokenContract = new web3.eth.Contract(bridge_abi, wGRAMSTokenContractAddress);
                 } else {
                     alert('Invalid asset selected. Please try again.');
@@ -652,7 +290,7 @@ const BridgeCrypto = () => {
                         params: [transactionParameters],
                     });
 
-                    setLogMessage("Transaction Hash: " + transactionHash);
+                    displayTransactionId(transactionHash);
                     console.log('Transaction Hash:', transactionHash);
                 } catch (error) {
                     setLogMessage(error);
@@ -671,7 +309,7 @@ const BridgeCrypto = () => {
                             },
                         ],
                     });
-                    setLogMessage("TxId: " + transaction);
+                    displayTransactionId(transaction);
                     console.log(transaction);
                 }
                 catch (error) {
@@ -693,7 +331,7 @@ const BridgeCrypto = () => {
                     <div className="container mx-auto pl-2 pr-2">
                         <div className="grid grid-cols-12 gap-4 content-center">
                             <div className=" col-span-4 navbar__logo">
-                                Cross Chain Bridge
+                                Party Bridge
                             </div>
                             <div className="col-span-8 flex flex-row justify-end items-center">
                                 <button className="btn btn--outline btn--metamask mr-5"
@@ -810,7 +448,7 @@ const BridgeCrypto = () => {
                         </div>
                         <div className="box box--small">
                             <p className="text-lg">Id: <span className="font-semibold">{clientId}</span></p>
-                            <p className="text-lg">{logMessage}</p>
+                            <div className="text-lg break-words" dangerouslySetInnerHTML={{__html: logMessage}} />
                         </div>
                     </div>
 
@@ -819,11 +457,9 @@ const BridgeCrypto = () => {
                 <footer className="py-7">
                     <div className="container mx-auto pl-2 pr-2">
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-center sm:text-left">
-                            <div className="mb-5 sm:mb-0">&copy; {new Date().getFullYear()}</div>
+                            <div className="mb-5 sm:mb-0">&copy; {new Date().getFullYear()} All rights reserved</div>
                             <div className="flex flex-col items-center sm:flex-row footer__links">
                                 <span></span>
-                                <a href="#"><img src={logo_bscscan} width="80" /></a>
-                                <a href="#"><img src={logo_pancake} width="90" /></a>
                             </div>
                         </div>
                     </div>
