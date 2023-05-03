@@ -181,7 +181,7 @@ const BridgeCrypto = () => {
                 params: [account, "latest"],
             });
             const w3 = new Web3(); // XXX
-            setBalance(parseFloat(w3.utils.fromWei(parseInt(balance).toString(), 'ether')).toFixed(5));
+            setBalance(parseFloat(w3.utils.fromWei(balance, 'ether')).toFixed(5));
         } else {
             setBalance('0');
         }
@@ -191,7 +191,7 @@ const BridgeCrypto = () => {
     const updateTokenBalance = async (tokenContract, account) => {
       const balance = await tokenContract.methods.balanceOf(account).call();
       const w3 = new Web3(); // XXX
-      setBalance(parseFloat(w3.utils.fromWei(parseInt(balance).toString(), 'ether')).toFixed(5));
+      setBalance(parseFloat(w3.utils.fromWei(balance.toString(), 'ether')).toFixed(5));
     }
 
     const requestChangeToOctaSpaceNetwork = async () => {
