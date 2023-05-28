@@ -52,25 +52,67 @@ const BridgeCrypto = () => {
 
     const loadWeb3 = async () => {
         if (window.ethereum) {
-          const web3Instance = new Web3(window.ethereum);
-          setWeb3(web3Instance);
+            const web3Instance = new Web3(window.ethereum);
+            setWeb3(web3Instance);
         } else {
-          alert("MetaMask is not installed. Please install MetaMask and try again.");
+            alert("MetaMask is not installed. Please install MetaMask and try again.");
         }
-      };
+    };
 
-      
+
+    const addwGRAMSToWallet = async () => {
+        const wasAdded = await window.ethereum.request({
+            method: 'wallet_watchAsset',
+            params: {
+                type: 'ERC20',
+                options: {
+                    address: wGRAMSTokenContractAddress,
+                    symbol: 'wGRAMS',
+                    decimals: 18, // You should adjust this value according to the token's actual precision
+                    image: '',  // You should provide image url of the token
+                },
+            },
+        });
+
+        if (wasAdded) {
+            console.log('Thanks for your interest!');
+        } else {
+            console.log('Your loss!');
+        }
+    };
+
+    const addwOCTAToWallet = async () => {
+        const wasAdded = await window.ethereum.request({
+            method: 'wallet_watchAsset',
+            params: {
+                type: 'ERC20',
+                options: {
+                    address: wOCTATokenContractAddress,
+                    symbol: 'wOCTA',
+                    decimals: 18,  // You should adjust this value according to the token's actual precision
+                    image: '',  // You should provide image url of the token
+                },
+            },
+        });
+
+        if (wasAdded) {
+            console.log('Thanks for your interest!');
+        } else {
+            console.log('Your loss!');
+        }
+    };
+
     const handleChange = (e) => {
         if (e.target.name === 'fromChain') {
             if (e.target.value === 'octa') {
                 setAssets(octaAssets);
                 setBridgeTo(octaBridgeTo);
-                setFormData({ ...formData, [e.target.name]: e.target.value, bridgeTo: octaBridgeTo[0].value, currency: octaAssets[0].value});
+                setFormData({ ...formData, [e.target.name]: e.target.value, bridgeTo: octaBridgeTo[0].value, currency: octaAssets[0].value });
             }
             if (e.target.value === 'grams') {
                 setAssets(partyAssets);
                 setBridgeTo(partyBridgeTo);
-                setFormData({ ...formData, [e.target.name]: e.target.value, bridgeTo: partyBridgeTo[0].value , currency: partyAssets[0].value});
+                setFormData({ ...formData, [e.target.name]: e.target.value, bridgeTo: partyBridgeTo[0].value, currency: partyAssets[0].value });
             }
         } else if (e.target.name === 'currency') {
             setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -81,12 +123,12 @@ const BridgeCrypto = () => {
 
     React.useEffect(() => {
         if (window.ethereum) {
-          window.ethereum.on("chainChanged", chainChanged);
+            window.ethereum.on("chainChanged", chainChanged);
         }
         connectMetaMask();
         loadWeb3(); // Add this line
         initWebSocketConnection();
-      }, []);
+    }, []);
 
     const reconnectInterval = useRef(null);
 
@@ -172,15 +214,15 @@ const BridgeCrypto = () => {
 
     const displayTransactionId = async (tx) => {
 
-      var explorer = '';
+        var explorer = '';
 
-      if (formData.fromChain === 'octa') {
-        explorer = "https://explorer.octa.space/tx/";
-      } else if (formData.fromChain === 'grams') {
-        explorer = "https://tea.mining4people.com/tx/";
-      }
+        if (formData.fromChain === 'octa') {
+            explorer = "https://explorer.octa.space/tx/";
+        } else if (formData.fromChain === 'grams') {
+            explorer = "https://tea.mining4people.com/tx/";
+        }
 
-      setLogMessage('Transaction: <a href="' + explorer + tx + '">' + tx.slice(0, 12) + '...' + tx.slice(-4) + '</a>');
+        setLogMessage('Transaction: <a href="' + explorer + tx + '">' + tx.slice(0, 12) + '...' + tx.slice(-4) + '</a>');
     };
 
     const handleSubmit = async (e) => {
@@ -277,14 +319,14 @@ const BridgeCrypto = () => {
                 // Create a transaction
                 try {
                     // if the currency is wgrams or wocta then we need to handle the contract
-        
+
                     const transferData = tokenContract.methods.transfer(response.data.address, responseAmountHex).encodeABI();
                     const transactionParameters = {
                         to: assetContractAddress,
                         from: formData.shippingAddress,
                         data: transferData,
                     };
-            
+
                     const transactionHash = await window.ethereum.request({
                         method: 'eth_sendTransaction',
                         params: [transactionParameters],
@@ -448,7 +490,7 @@ const BridgeCrypto = () => {
                         </div>
                         <div className="box box--small">
                             <p className="text-lg">Id: <span className="font-semibold">{clientId}</span></p>
-                            <div className="text-lg break-words" dangerouslySetInnerHTML={{__html: logMessage}} />
+                            <div className="text-lg break-words" dangerouslySetInnerHTML={{ __html: logMessage }} />
                         </div>
                     </div>
 
@@ -459,6 +501,18 @@ const BridgeCrypto = () => {
                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center text-center sm:text-left">
                             <div className="mb-5 sm:mb-0">&copy; {new Date().getFullYear()} All rights reserved</div>
                             <div className="flex flex-col items-center sm:flex-row footer__links">
+                                <button
+                                    className="btn btn--main sm:ml-0 ml-20"
+                                    onClick={addwGRAMSToWallet}>
+                                    {/* <img src={wgramsImage} alt="wgrams" height="20px" /> */}
+                                    Add wGRAMS to wallet
+                                </button>
+                                <button
+                                    onClick={addwOCTAToWallet}
+                                    className="btn btn--main sm:ml-0 ml-20">
+                                    {/* <img src={woctaImage} alt="wocta" height="20px" /> */}
+                                    Add wOCTA to wallet
+                                </button>
                                 <span></span>
                             </div>
                         </div>
