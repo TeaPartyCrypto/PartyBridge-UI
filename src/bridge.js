@@ -513,6 +513,16 @@ const BridgeCrypto = () => {
                                     {/* <img src={woctaImage} alt="wocta" height="20px" /> */}
                                     Add wOCTA to wallet
                                 </button>
+                                <button
+                                    className="btn btn--main sm:ml-0 ml-20"
+                                    onClick={() => window.open('https://explorer.octa.space/address/0x243817422319Ba775Ef23485711C82Efe8100951', '_blank')}>
+                                    View wGRAMS Explorer
+                                </button>
+                                <button
+                                    className="btn btn--main sm:ml-0 ml-20"
+                                    onClick={() => window.open('https://explorer.octa.space/address/0x52220a92B75b9121352A1ddC50e4b8088b758C9b', '_blank')}>
+                                    View wOCTA Explorer
+                                </button>
                                 <span></span>
                             </div>
                         </div>
