@@ -1,7 +1,6 @@
-import React, { useState, useRef } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import Web3 from 'web3';
-import { v4 as uuidv4 } from 'uuid';
+import useWebSocket from 'react-use-websocket';
 import bridge_abi from './bridge_abi.json';
 import './style.css';
 
@@ -9,14 +8,6 @@ const wOCTATokenContractAddress = "0x52220a92B75b9121352A1ddC50e4b8088b758C9b"
 const wGRAMSTokenContractAddress = "0x243817422319Ba775Ef23485711C82Efe8100951"
 
 const BridgeCrypto = () => {
-
-    const [formData, setFormData] = useState({
-        currency: 'octa',
-        fromChain: 'octa',
-        amount: '1',
-        bridgeTo: 'grams',
-        shippingAddress: '',
-    });
 
     const octaAssets = [
         { value: 'octa', text: 'OCTA' },
@@ -45,9 +36,7 @@ const BridgeCrypto = () => {
       'wocta': 'OCTA'
     };
 
-    const [ws, setWs] = useState(null);
-    const [clientId, setClientID] = useState(uuidv4());
-    const URL = "ws://143.42.111.52:8080/ws";
+    const [sessionId, setSessionID] = useState(null);
 
     const [logMessage, setLogMessage] = useState(null);
     const [account, setAccount] = useState(null);
@@ -58,7 +47,47 @@ const BridgeCrypto = () => {
     const [asset, setAsset] = useState(octaAssets[0].value); // octaAssets[0].value
     const [bridgeTo, setBridgeTo] = useState(octaBridgeTo);
     const [assetsTo, setAssetsTo] = useState('wOCTA');
-    const [web3, setWeb3] = useState(null);
+    const [web3, setWeb3] = useState(new Web3());
+
+    const [formData, setFormData] = useState({
+        currency: 'octa',
+        fromChain: 'octa',
+        amount: minimum,
+        bridgeTo: 'grams',
+        shippingAddress: '',
+    });
+
+    const {
+      sendJsonMessage,
+    } = useWebSocket("ws://127.0.0.1:8080/ws", {
+      onOpen: () => console.log("websocket connection estaliblished"),
+      shouldReconnect: (closeEvent) => true,
+      onMessage: (event: WebSocketEventMap['message']) =>  processMessages(event),
+    });
+
+
+    const processMessages = (event: { data: string; }) => {
+      console.log('WebSocket message received:', event.data);
+      const msg = JSON.parse(event.data);
+
+      switch(msg.type) {
+        case "hello":
+          setSessionID(msg.sid);
+          setFee(msg.fee.toString());
+          setMinimum(msg.minimumAmount.toString());
+          setFormData({ ...formData, amount: msg.minimumAmount.toString()});
+          break;
+        case "requestBridgeResponse":
+          sendTransaction(msg);
+          break;
+        case "error":
+          alert(msg.message);
+          break;
+        default:
+          console.log("receive unexpected message: " + msg);
+          break;
+      }
+    }
 
     const loadWeb3 = async () => {
         if (window.ethereum) {
@@ -105,65 +134,137 @@ const BridgeCrypto = () => {
           window.ethereum.on("chainChanged", chainChanged);
         }
         connectMetaMask();
-        loadWeb3(); // Add this line
-        initWebSocketConnection();
+        loadWeb3();
       }, []);
 
-    const reconnectInterval = useRef(null);
+    const sendTransaction = async (msg) => {
+      console.log("send transaction");
+      if (!msg.address || !msg.amount) {
+        alert('Invalid response from server. Please try again.');
+        return;
+      } 
 
-    const initWebSocketConnection = () => {
-        const websocket = new WebSocket(`${URL}?id=${clientId}`);
-
-        websocket.onopen = () => {
-            console.log('WebSocket connection opened');
-            if (reconnectInterval.current) {
-                clearInterval(reconnectInterval.current);
-                reconnectInterval.current = null;
-            }
-        };
-
-        websocket.onmessage = (event) => {
-            console.log('WebSocket message received:', event.data);
-        };
-
-        websocket.onclose = () => {
-            console.log('WebSocket connection closed');
-            if (!reconnectInterval.current) {
-                reconnectInterval.current = setInterval(() => {
-                    console.log('Attempting to reconnect...');
-                    initWebSocketConnection();
-                }, 5000); // Reconnect every 5 seconds
-            }
-        };
-
-        websocket.onerror = (error) => {
-            console.error('WebSocket error:', error);
-        };
-
-        setWs(websocket);
-    };
-
-    const chainChanged = async () => {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        updateBalance(accounts[0], formData.currency);
-    };
-
-    const connectMetaMask = async () => {
-        if (window.ethereum) {
-            try {
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                setFormData({ ...formData, shippingAddress: accounts[0] });
-
-                setAccount(accounts[0]);
-                await updateBalance(accounts[0], formData.currency);
-            } catch (error) {
-                console.error('Error:', error);
-            }
-        } else {
-            setLogMessage("MetaMask is not installed. Please install MetaMask and try again.");
-            //alert('MetaMask is not installed. Please install MetaMask and try again.');
+      // Validate that the user has selected the correct network
+      try {
+        if (formData.fromChain === 'octa') {
+          await requestChangeToOctaSpaceNetwork();
         }
+        if (formData.fromChain === 'grams') {
+          await requestChangeToPartyChainNetwork();
+        }
+      } catch (error) {
+        console.error('Error switching networks:', error);
+        return;
+      }
+
+      var amountHex = web3.utils.toHex(msg.amount);
+
+      // if the form data contains wgrams or wocta then we need to handle the contract
+      if (formData.currency === 'wgrams' || formData.currency === 'wocta') {
+        console.log('Handling contract for ' + formData.currency);
+        // Set the contract address of the selected asset
+        let assetContractAddress;
+        let tokenContract
+        if (formData.currency === 'wocta') {
+          assetContractAddress = wOCTATokenContractAddress;
+          tokenContract = new web3.eth.Contract(bridge_abi, wOCTATokenContractAddress);
+        } else if (formData.currency === 'wgrams') {
+          assetContractAddress = wGRAMSTokenContractAddress;
+          tokenContract = new web3.eth.Contract(bridge_abi, wGRAMSTokenContractAddress);
+        } else {
+          alert('Invalid asset selected. Please try again.');
+          return;
+        }
+
+        try {
+          // if the currency is wgrams or wocta then we need to handle the contract
+          const transferData = tokenContract.methods.transfer(msg.address, amountHex).encodeABI();
+          const transactionParameters = {
+            to: assetContractAddress,
+            from: formData.shippingAddress,
+            data: transferData,
+          };
+
+          const transactionHash = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [transactionParameters],
+          });
+
+          displayTransactionId(transactionHash);
+          console.log('Transaction Hash:', transactionHash);
+          confirmBridge();
+        } catch (error) {
+          if (error.code === 4001) {
+            setLogMessage("Transaction canceled");
+          } else {
+            setLogMessage(error);
+            console.error('Error sending transaction:', error);
+          }
+        }
+      } else {
+        // Create a transaction
+        try {
+          const transaction = await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [
+              {
+                from: formData.shippingAddress,
+                to: msg.address,
+                value: amountHex,
+              },
+            ],
+          });
+
+          displayTransactionId(transaction);
+          console.log(transaction);
+          confirmBridge(transaction);
+        } catch (error) {
+          if (error.code === 4001) {
+            setLogMessage("Transaction canceled");
+          } else { 
+            setLogMessage(error);
+            console.error('Error sending transaction:', error);
+          }
+        }
+      }
     };
+
+  const confirmBridge = async (transaction) => {
+    const msg = {
+        type: 'confirmBridge',
+        txId: transaction,
+    };
+    console.log(msg);
+    sendJsonMessage(msg);
+  }
+
+  const chainChanged = async () => {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    updateBalance(accounts[0], formData.currency);
+  };
+
+  const connectMetaMask = async () => {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        setFormData({ ...formData, shippingAddress: accounts[0] });
+
+        setAccount(accounts[0]);
+        await updateBalance(accounts[0], formData.currency);
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        console.log(chainId);
+        if (web3.utils.hexToNumber(chainId) === 8000001) {
+          // Set connected network
+        } else if (web3.utils.hexToNumber(chainId) === 1773) {
+          // Set connected network
+        }
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    } else {
+      setLogMessage("MetaMask is not installed. Please install MetaMask and try again.");
+    }
+  };
 
     const updateBalance = async (account, currency) => {
       let tokenContract
@@ -224,6 +325,10 @@ const BridgeCrypto = () => {
             setLogMessage('Cannot add OctaSpace: ' + addError)
           }
         }
+        if (switchError.code === 4001) {
+          setLogMessage("Switch network to OctaSpace is canceled");
+          throw switchError;
+        }
       }
     };
 
@@ -256,6 +361,10 @@ const BridgeCrypto = () => {
             setLogMessage('Cannot add PartyChain: ' + addError)
           }
         }
+        if (switchError.code === 4001) {
+          setLogMessage("Switch network to PartyChain is canceled");
+          throw switchError;
+        }
       }
     };
 
@@ -273,143 +382,33 @@ const BridgeCrypto = () => {
     };
 
     const handleSubmit = async (e) => {
-        console.log(formData);
-        e.preventDefault();
+      e.preventDefault();
 
-        // validate that the user has connected MetaMask
-        if (!formData.shippingAddress) {
-            alert('Please connect MetaMask to continue.')
-            connectMetaMask();
-            return;
+      // validate that the user has connected MetaMask
+      if (!formData.shippingAddress) {
+          alert('Please connect MetaMask to continue.')
+          connectMetaMask();
+          return;
+      }
+
+      // validate that all fields are populated
+      for (const field in formData) {
+          if (!formData[field]) {
+              alert(`Please fill in the ${field} field.`);
+              return;
+          }
+      }
+
+      const requestBridge = {
+        type: 'requestBridge',
+        data: {
+          ...formData,
+          amount: parseInt(web3.utils.toWei(formData.amount, 'ether')),
         }
+      };
 
-        // validate that all fields are populated
-        for (const field in formData) {
-            if (!formData[field]) {
-                alert(`Please fill in the ${field} field.`);
-                return;
-            }
-        }
-
-        // Validate that the user has selected the correct network
-        try {
-            if (formData.fromChain === 'octa') {
-                await requestChangeToOctaSpaceNetwork();
-            }
-            if (formData.fromChain === 'grams') {
-                await requestChangeToPartyChainNetwork();
-            }
-        } catch (error) {
-            setLogMessage('Error switching networks:' + error);
-            console.error('Error switching networks:', error);
-            return;
-        }
-
-        // Convert the amount into a BigInt
-        const amountInWei = parseInt(web3.utils.toWei(formData.amount, 'ether'))
-
-        try {
-            const response = await axios.post(
-                `/requestbridge?id=${clientId}`,
-                {
-                    ...formData,
-                    amount: amountInWei,
-                },
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                },
-            ).catch((error) => {
-                if (error.response) {
-                    console.error("Server responded with an error:", error.response.data);
-                } else if (error.request) {
-                    console.error("No response was received from the server:", error.request);
-                } else {
-                    console.error("Axios error:", error.message);
-                }
-            });
-
-            if (!response) {
-                setLogMessage("No response object");
-                console.error("No response object");
-                return;
-            }
-            console.log(response.data)
-
-            // Verify the response.data has valid fields
-            if (!response.data.address || !response.data.amount) {
-                alert('Invalid response from server. Please try again.');
-                return;
-            }
-
-            // Convert the response amount to a hexadecimal string
-            var responseAmountHex = web3.utils.toHex(response.data.amount);
-
-            // if the form data contains wgrams or wocta then we need to handle the contract 
-            if (formData.currency === 'wgrams' || formData.currency === 'wocta') {
-                console.log('Handling contract for ' + formData.currency);
-                // Set the contract address of the selected asset
-                let assetContractAddress;
-                let tokenContract
-                if (formData.currency === 'wocta') {
-                    assetContractAddress = wOCTATokenContractAddress;
-                    tokenContract = new web3.eth.Contract(bridge_abi, wOCTATokenContractAddress);
-                } else if (formData.currency === 'wgrams') {
-                    assetContractAddress = wGRAMSTokenContractAddress;
-                    tokenContract = new web3.eth.Contract(bridge_abi, wGRAMSTokenContractAddress);
-                } else {
-                    alert('Invalid asset selected. Please try again.');
-                    return;
-                }
-
-                // Create a transaction
-                try {
-                    // if the currency is wgrams or wocta then we need to handle the contract
-        
-                    const transferData = tokenContract.methods.transfer(response.data.address, responseAmountHex).encodeABI();
-                    const transactionParameters = {
-                        to: assetContractAddress,
-                        from: formData.shippingAddress,
-                        data: transferData,
-                    };
-            
-                    const transactionHash = await window.ethereum.request({
-                        method: 'eth_sendTransaction',
-                        params: [transactionParameters],
-                    });
-
-                    displayTransactionId(transactionHash);
-                    console.log('Transaction Hash:', transactionHash);
-                } catch (error) {
-                    setLogMessage(error);
-                    console.error('Error sending transaction:', error);
-                }
-            } else {
-                // Create a transaction
-                try {
-                    const transaction = await window.ethereum.request({
-                        method: 'eth_sendTransaction',
-                        params: [
-                            {
-                                from: formData.shippingAddress,
-                                to: response.data.address,
-                                value: responseAmountHex,
-                            },
-                        ],
-                    });
-                    displayTransactionId(transaction);
-                    console.log(transaction);
-                }
-                catch (error) {
-                    setLogMessage(error);
-                    console.error('Error sending transaction:', error);
-                }
-            }
-        } catch (error) {
-            setLogMessage(error);
-            console.error('Error sending transaction:', error);
-        }
+      console.log(requestBridge);
+      sendJsonMessage(requestBridge);
     };
 
 
@@ -489,8 +488,8 @@ const BridgeCrypto = () => {
                             </div>
 
                             <div className="box__input-group">
-                                <label htmlFor="amount" className="mr-2">Amount:</label>
-                                <input name="amount" type="number" id="amount" placeholder="100 ... 100000" min="100" max="100000"
+                                <label htmlFor="amount" className="mr-2">Amount</label>
+                                <input name="amount" type="number" id="amount" placeholder="100 ... 100000" min={minimum} max="10000000"
                                     value={formData.amount}
                                     onChange={handleChange}
                                 />
@@ -542,14 +541,14 @@ const BridgeCrypto = () => {
                             </div>
 
                             <div className="box__input-group">
-                                <label htmlFor="amount" className="mr-2">Amount:</label>
+                                <label htmlFor="amount" className="mr-2">Amount</label>
                                 <input name="amount" type="number" id="amount" value={formData.amount} readOnly disabled/>
                             </div>
 
 
                         </div>
                         <div className="box box--small">
-                            <p className="text-lg">Id: <span className="font-semibold">{clientId}</span></p>
+                            <p className="text-lg">SID: <span className="font-semibold">{sessionId}</span></p>
                             <div className="text-lg break-words" dangerouslySetInnerHTML={{__html: logMessage}} />
                         </div>
                     </div>
