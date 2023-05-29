@@ -5,8 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 import bridge_abi from './bridge_abi.json';
 import './style.css';
 
-const wOCTATokenContractAddress = "0x52220a92B75b9121352A1ddC50e4b8088b758C9b"
-const wGRAMSTokenContractAddress = "0x243817422319Ba775Ef23485711C82Efe8100951"
+const wOCTATokenContractAddress = "0xa013e56ed460eCAaE5dc4c5019b2c8470aC09441"
+const wGRAMSTokenContractAddress = "0xa013e56ed460eCAaE5dc4c5019b2c8470aC09441"
 
 const BridgeCrypto = () => {
 
@@ -515,12 +515,12 @@ const BridgeCrypto = () => {
                                 </button>
                                 <button
                                     className="btn btn--main sm:ml-0 ml-20"
-                                    onClick={() => window.open('https://explorer.octa.space/address/0x243817422319Ba775Ef23485711C82Efe8100951', '_blank')}>
+                                    onClick={() => window.open('https://explorer.octa.space/address/0xa013e56ed460eCAaE5dc4c5019b2c8470aC09441', '_blank')}>
                                     View wGRAMS Explorer
                                 </button>
                                 <button
                                     className="btn btn--main sm:ml-0 ml-20"
-                                    onClick={() => window.open('https://explorer.octa.space/address/0x52220a92B75b9121352A1ddC50e4b8088b758C9b', '_blank')}>
+                                    onClick={() => window.open('https://explorer.octa.space/address/0xa013e56ed460eCAaE5dc4c5019b2c8470aC09441', '_blank')}>
                                     View wOCTA Explorer
                                 </button>
                                 <span></span>
