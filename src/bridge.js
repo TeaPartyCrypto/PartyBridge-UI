@@ -516,12 +516,12 @@ const BridgeCrypto = () => {
                                 <button
                                     className="btn btn--main sm:ml-0 ml-20"
                                     onClick={() => window.open('https://explorer.octa.space/address/0xa013e56ed460eCAaE5dc4c5019b2c8470aC09441', '_blank')}>
-                                    View wGRAMS Explorer
+                                    wGRAMS Explorer
                                 </button>
                                 <button
                                     className="btn btn--main sm:ml-0 ml-20"
-                                    onClick={() => window.open('https://explorer.octa.space/address/0xa013e56ed460eCAaE5dc4c5019b2c8470aC09441', '_blank')}>
-                                    View wOCTA Explorer
+                                    onClick={() => window.open('https://tea.mining4people.com/address/0xa013e56ed460eCAaE5dc4c5019b2c8470aC09441', '_blank')}>
+                                    wOCTA Explorer
                                 </button>
                                 <span></span>
                             </div>

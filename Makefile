@@ -1,4 +1,5 @@
 image: 
+	@make bld
 	@cd be/cmd && go mod tidy && GOOS=linux go build -o be main.go
 	@cd be && gcloud builds submit --tag gcr.io/mineonlium/partybridgeui . 
 
